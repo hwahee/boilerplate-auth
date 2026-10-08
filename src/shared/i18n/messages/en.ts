@@ -96,7 +96,12 @@ export const en = {
   'auth.signUp': 'Sign up',
   'auth.disabled': 'Sign-in is turned off on this server (AUTH_DRIVER=none).',
   'auth.goHome': 'Go to home',
+  'auth.requestExpired':
+    'This sign-in request has expired or was already used. Go back to the service and try again.',
+  'auth.returning': 'Taking you back…',
   'auth.login.description': 'Sign in with your user ID. There is no password during development.',
+  'auth.login.forService':
+    'Sign in to continue to {service}. There is no password during development.',
   'auth.login.notRegistered': 'No member has this ID. Check it, or sign up first.',
   'auth.login.noAccount': 'Not a member yet?',
   'auth.signUp.description': 'Choose a user ID and a nickname. A short bio is optional.',
@@ -109,8 +114,10 @@ export const en = {
   'auth.bioPlaceholder': 'A few words about yourself',
   'auth.bioCount': '{count}/{max}',
   'auth.bioInvalid': 'Keep it to {max} characters.',
-  'auth.logout.confirm': 'You are signed in as {name}. Sign out?',
-  'auth.logout.done': 'You are signed out.',
+  'auth.logout.confirm': 'You are signed in as {name}. Sign out of every service?',
+  'auth.logout.confirmUnknown': 'Sign out of every service?',
+  'auth.logout.signingOut': 'Signing you out of every service…',
+  'auth.logout.done': 'You are signed out of every service.',
   'auth.logout.notSignedIn': 'You are not signed in.',
 
   'notFound.title': 'Page not found',

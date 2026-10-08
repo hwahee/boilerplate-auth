@@ -7,7 +7,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
 
 import { VERSION_HEADER } from '@shared/api/version';
 import type { Todo } from '@shared/domain/todo';
-import type { User } from '@shared/domain/user';
+import type { SignInResult, User } from '@shared/domain/user';
 
 import { buildApp, type SocketData } from '../app';
 import { loadServerConfig } from '../config';
@@ -297,23 +297,24 @@ function cookieFrom(headers: Headers): string {
 
 describe('auth (AUTH_DRIVER=dev)', () => {
   test('sign up → signed in (me 200) → sign out → me 401 → log in by id → me 200', async () => {
-    const signUp = await api<User>('POST', '/api/auth/sign-up', {
+    const signUp = await api<SignInResult>('POST', '/api/auth/sign-up', {
       body: { userId: 'alice', displayName: 'Alice', bio: 'Hello, I am Alice.' },
       as: 'guest',
     });
     expect(signUp.status).toBe(201);
-    expect(signUp.body).toMatchObject({
+    expect(signUp.body.user).toMatchObject({
       id: 'alice',
       displayName: 'Alice',
       bio: 'Hello, I am Alice.',
     });
-    expect(signUp.body.createdAt).toMatch(/Z$/); // UTC at the boundary
+    expect(signUp.body.user.createdAt).toMatch(/Z$/); // UTC at the boundary
+    expect(signUp.body.redirectTo).toBeNull(); // no service waiting
     expect(signUp.headers.get('set-cookie')).toContain('HttpOnly');
     const cookie = cookieFrom(signUp.headers);
 
     const me = await api<User>('GET', '/api/auth/me', { headers: { cookie } });
     expect(me.status).toBe(200);
-    expect(me.body).toEqual(signUp.body);
+    expect(me.body).toEqual(signUp.body.user);
 
     const logout = await api('POST', '/api/auth/logout', { headers: { cookie } });
     expect(logout.status).toBe(204);
@@ -326,7 +327,7 @@ describe('auth (AUTH_DRIVER=dev)', () => {
     expect(after.status).toBe(401);
     expect(after.body.error.code).toBe('UNAUTHORIZED');
 
-    const login = await api<User>('POST', '/api/auth/login', {
+    const login = await api<SignInResult>('POST', '/api/auth/login', {
       body: { userId: 'alice' },
       as: 'guest',
     });
@@ -339,17 +340,17 @@ describe('auth (AUTH_DRIVER=dev)', () => {
   });
 
   test('the bio is optional; a blank one is stored as null', async () => {
-    const noBio = await api<User>('POST', '/api/auth/sign-up', {
+    const noBio = await api<SignInResult>('POST', '/api/auth/sign-up', {
       body: { userId: 'nobio', displayName: 'No bio' },
       as: 'guest',
     });
     expect(noBio.status).toBe(201);
-    expect(noBio.body.bio).toBeNull();
-    const blank = await api<User>('POST', '/api/auth/sign-up', {
+    expect(noBio.body.user.bio).toBeNull();
+    const blank = await api<SignInResult>('POST', '/api/auth/sign-up', {
       body: { userId: 'blankbio', displayName: 'Blank bio', bio: '   ' },
       as: 'guest',
     });
-    expect(blank.body.bio).toBeNull();
+    expect(blank.body.user.bio).toBeNull();
   });
 
   test('signing up with a taken id is 409 CONFLICT and changes nothing', async () => {
@@ -366,11 +367,11 @@ describe('auth (AUTH_DRIVER=dev)', () => {
     expect(body.error).toMatchObject({ code: 'CONFLICT', message: '이미 존재합니다.' });
     expect(headers.get('set-cookie')).toBeNull();
 
-    const login = await api<User>('POST', '/api/auth/login', {
+    const login = await api<SignInResult>('POST', '/api/auth/login', {
       body: { userId: 'taken' },
       as: 'guest',
     });
-    expect(login.body.displayName).toBe('First');
+    expect(login.body.user.displayName).toBe('First');
   });
 
   test('logging in with an id nobody signed up with is 404 — it does not create a member', async () => {

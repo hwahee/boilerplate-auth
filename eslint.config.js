@@ -105,6 +105,32 @@ export default tseslint.config(
       '@typescript-eslint/prefer-nullish-coalescing': ['error', { ignoreIfStatements: true }],
     },
   },
+  // Boundary: only the Hydra adapter talks to Hydra's admin API, so swapping
+  // Hydra for another provider stays a one-file change (CLAUDE.md).
+  {
+    files: ['src/server/**/*.ts'],
+    ignores: [
+      'src/server/config.ts',
+      'src/server/config.test.ts',
+      'src/server/identity/hydra.ts',
+      'src/server/identity/hydra.test.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[property.name='hydraAdminUrl']",
+          message:
+            "Only src/server/identity/hydra.ts calls Hydra's admin API. Add what you need to HydraClient there.",
+        },
+        {
+          selector: "ObjectPattern > Property[key.name='hydraAdminUrl']",
+          message:
+            "Only src/server/identity/hydra.ts calls Hydra's admin API. Add what you need to HydraClient there.",
+        },
+      ],
+    },
+  },
   // Boundary: shared may not import from client nor server at all.
   {
     files: ['src/shared/**/*.{ts,tsx}'],

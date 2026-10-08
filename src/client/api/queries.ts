@@ -7,7 +7,7 @@
  */
 import type { Page } from '@shared/api/pagination';
 import type { Todo, TodoStatus } from '@shared/domain/todo';
-import type { SignUpInput, User } from '@shared/domain/user';
+import type { SignInResult, SignUpInput, User } from '@shared/domain/user';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
@@ -47,12 +47,23 @@ export function useCaller(): 'member' | 'guest' | 'anyone' | 'unknown' {
   return 'unknown';
 }
 
+/**
+ * Where a finished sign-in goes: back to the service that asked (a full page
+ * load — it is another site), or nowhere when the visitor came on their own.
+ */
+function followSignIn(result: SignInResult) {
+  if (result.redirectTo !== null) window.location.assign(result.redirectTo);
+}
+
 /** Registers and signs in; the new user becomes the cached `me` directly. */
 export function useSignUp() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: SignUpInput) => authApi.signUp(input),
-    onSuccess: (user) => queryClient.setQueryData<User | null>(authKeys.me, user),
+    onSuccess: (result) => {
+      queryClient.setQueryData<User | null>(authKeys.me, result.user);
+      followSignIn(result);
+    },
   });
 }
 
@@ -60,17 +71,49 @@ export function useSignUp() {
 export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (userId: string) => authApi.login({ userId }),
-    onSuccess: (user) => queryClient.setQueryData<User | null>(authKeys.me, user),
+    mutationFn: (input: { userId: string; loginChallenge?: string }) => authApi.login(input),
+    onSuccess: (result) => {
+      queryClient.setQueryData<User | null>(authKeys.me, result.user);
+      followSignIn(result);
+    },
   });
 }
 
-/** Signs out; `me` becomes `null` without a refetch. */
+/**
+ * A service sent the visitor to sign in: goes straight back when they are
+ * already signed in; otherwise the page shows the form for that service.
+ */
+export function useResumeLogin() {
+  return useMutation({
+    mutationFn: (loginChallenge: string) => authApi.resumeLogin(loginChallenge),
+    onSuccess: (resumption) => {
+      if (resumption.redirectTo !== null) window.location.replace(resumption.redirectTo);
+    },
+  });
+}
+
+/** Who a service's sign-out request is for (null challenge: no request). */
+export function useLogoutRequest(logoutChallenge: string | null) {
+  return useQuery({
+    queryKey: ['auth', 'logout-request', logoutChallenge],
+    queryFn: () => authApi.logoutRequest(logoutChallenge ?? ''),
+    enabled: logoutChallenge !== null,
+    staleTime: Infinity,
+  });
+}
+
+/**
+ * Signs out; `me` becomes `null` without a refetch. With a service's logout
+ * challenge, the browser then follows Hydra to sign every service out.
+ */
 export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => authApi.logout(),
-    onSuccess: () => queryClient.setQueryData<User | null>(authKeys.me, null),
+    mutationFn: (logoutChallenge?: string) => authApi.logout(logoutChallenge),
+    onSuccess: (result) => {
+      queryClient.setQueryData<User | null>(authKeys.me, null);
+      if (result) window.location.assign(result.redirectTo);
+    },
   });
 }
 
