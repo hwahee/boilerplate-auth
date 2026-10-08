@@ -27,6 +27,14 @@ const configValidator = toValidator(
      * mounted), `dev` = by user id alone, no password — never in production.
      */
     authDriver: s._default(s.enum(['none', 'dev']), 'none'),
+    /**
+     * Ory Hydra, the OIDC provider this member server fronts (CLAUDE.md):
+     * its public URL (the issuer browsers are sent to) and its admin URL
+     * (reached only from src/server/identity/hydra.ts). Both or neither;
+     * neither means the member pages work on their own, with no services.
+     */
+    hydraPublicUrl: s.optional(s.url()),
+    hydraAdminUrl: s.optional(s.url()),
   }),
 );
 
@@ -34,6 +42,11 @@ export type ServerConfig = Infer<typeof configValidator>;
 
 function numberOrUndefined(value: string | undefined): number | undefined {
   return value === undefined || value === '' ? undefined : Number(value);
+}
+
+/** An unset or empty variable reads as absent (`.env` files leave keys empty). */
+function stringOrUndefined(value: string | undefined): string | undefined {
+  return value === '' ? undefined : value;
 }
 
 export function loadServerConfig(
@@ -53,6 +66,8 @@ export function loadServerConfig(
     serverRole: env.SERVER_ROLE,
     shutdownDrainMs: numberOrUndefined(env.SHUTDOWN_DRAIN_MS),
     authDriver: env.AUTH_DRIVER,
+    hydraPublicUrl: stringOrUndefined(env.HYDRA_PUBLIC_URL),
+    hydraAdminUrl: stringOrUndefined(env.HYDRA_ADMIN_URL),
   });
 
   if (config.dbDriver === 'postgres' && !config.databaseUrl) {
@@ -60,6 +75,9 @@ export function loadServerConfig(
   }
   if (config.pubsubDriver === 'redis' && !config.redisUrl) {
     throw new Error('REDIS_URL is required when PUBSUB_DRIVER=redis');
+  }
+  if ((config.hydraPublicUrl === undefined) !== (config.hydraAdminUrl === undefined)) {
+    throw new Error('HYDRA_PUBLIC_URL and HYDRA_ADMIN_URL are set together or not at all');
   }
   if (config.authDriver === 'dev' && config.appEnv === 'production') {
     // Anyone who knows a user id could sign in as that user.

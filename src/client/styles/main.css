@@ -220,6 +220,13 @@ a {
   margin-block: var(--space-4);
 }
 
+/* "Taking you back…" while the browser is about to leave the page. */
+.auth-page__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .app-main {
   padding-top: var(--space-5);
 }
