@@ -189,24 +189,35 @@ a {
   gap: var(--space-2);
 }
 
-.account-controls .field {
-  position: relative;
-  width: 10rem;
-}
-
-/* Overlays below the input so an error never shifts the header row. */
-.account-controls .field__error {
-  position: absolute;
-  top: 100%;
-  white-space: nowrap;
-}
-
 .account-controls__user {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   align-self: center;
   font-size: var(--font-size-sm);
+}
+
+/* Sign-up / sign-in / sign-out pages: one narrow column. */
+.auth-page {
+  max-width: 28rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-block: var(--space-4);
+}
+
+.auth-form > .btn {
+  align-self: flex-start;
+}
+
+.auth-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-block: var(--space-4);
 }
 
 .app-main {

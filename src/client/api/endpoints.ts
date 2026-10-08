@@ -23,7 +23,7 @@ import type {
   SendChatMessageInput,
 } from '@shared/domain/chat';
 import type { CreateTodoInput, Todo, TodoListQuery, UpdateTodoInput } from '@shared/domain/todo';
-import type { DevLoginInput, User } from '@shared/domain/user';
+import type { LoginInput, SignUpInput, User } from '@shared/domain/user';
 
 import { ApiRequestError, apiFetch } from './http';
 
@@ -98,16 +98,30 @@ export const todosApi = {
  */
 export const authApi = {
   /**
-   * `POST /api/auth/dev-login`
+   * `POST /api/auth/sign-up`
    *
-   * Signs in by user id alone — no password (development only). The first
-   * sign-in with an id creates that user.
-   * - Body:   `{ userId: string }` — 1–50 chars of `a-z`, `0-9`, `_`, `-`.
-   * - Errors: 400 `VALIDATION_ERROR`.
+   * Registers a member — no password, by design — and signs them in.
+   * - Body:   `{ userId, displayName, bio? }` — id: 1–50 chars of `a-z`, `0-9`,
+   *           `_`, `-`; nickname: 1–30 chars, not blank; bio: up to 500 chars
+   *           (blank counts as left out).
+   * - Errors: 400 `VALIDATION_ERROR`, 409 `CONFLICT` when the id is taken.
+   * - Returns 201 with the new `User` and sets the session cookie.
+   */
+  signUp(input: SignUpInput): Promise<User> {
+    return apiFetch('/api/auth/sign-up', { method: 'POST', body: input });
+  },
+
+  /**
+   * `POST /api/auth/login`
+   *
+   * Signs in by a registered user id alone (development stage). Never
+   * creates a member.
+   * - Body:   `{ userId: string }`.
+   * - Errors: 400 `VALIDATION_ERROR`, 404 `NOT_FOUND` when no member has that id.
    * - Returns the signed-in `User` and sets the session cookie.
    */
-  devLogin(input: DevLoginInput): Promise<User> {
-    return apiFetch('/api/auth/dev-login', { method: 'POST', body: input });
+  login(input: LoginInput): Promise<User> {
+    return apiFetch('/api/auth/login', { method: 'POST', body: input });
   },
 
   /**

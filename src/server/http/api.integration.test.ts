@@ -37,11 +37,11 @@ beforeAll(async () => {
   const app = buildApp(container, state);
   server = Bun.serve({ port: 0, ...app });
   baseUrl = String(server.url).replace(/\/$/, '');
-  const login = await api('POST', '/api/auth/dev-login', {
-    body: { userId: 'tester' },
+  const signUp = await api('POST', '/api/auth/sign-up', {
+    body: { userId: 'tester', displayName: 'Tester' },
     as: 'guest',
   });
-  memberCookie = cookieFrom(login.headers);
+  memberCookie = cookieFrom(signUp.headers);
 });
 
 afterAll(async () => {
@@ -296,17 +296,24 @@ function cookieFrom(headers: Headers): string {
 }
 
 describe('auth (AUTH_DRIVER=dev)', () => {
-  test('sign in → me 200 → sign out → me 401', async () => {
-    const login = await api<User>('POST', '/api/auth/dev-login', { body: { userId: 'alice' } });
-    expect(login.status).toBe(200);
-    expect(login.body).toMatchObject({ id: 'alice', displayName: 'alice' });
-    expect(login.body.createdAt).toMatch(/Z$/); // UTC at the boundary
-    expect(login.headers.get('set-cookie')).toContain('HttpOnly');
-    const cookie = cookieFrom(login.headers);
+  test('sign up → signed in (me 200) → sign out → me 401 → log in by id → me 200', async () => {
+    const signUp = await api<User>('POST', '/api/auth/sign-up', {
+      body: { userId: 'alice', displayName: 'Alice', bio: 'Hello, I am Alice.' },
+      as: 'guest',
+    });
+    expect(signUp.status).toBe(201);
+    expect(signUp.body).toMatchObject({
+      id: 'alice',
+      displayName: 'Alice',
+      bio: 'Hello, I am Alice.',
+    });
+    expect(signUp.body.createdAt).toMatch(/Z$/); // UTC at the boundary
+    expect(signUp.headers.get('set-cookie')).toContain('HttpOnly');
+    const cookie = cookieFrom(signUp.headers);
 
     const me = await api<User>('GET', '/api/auth/me', { headers: { cookie } });
     expect(me.status).toBe(200);
-    expect(me.body.id).toBe('alice');
+    expect(me.body).toEqual(signUp.body);
 
     const logout = await api('POST', '/api/auth/logout', { headers: { cookie } });
     expect(logout.status).toBe(204);
@@ -318,13 +325,67 @@ describe('auth (AUTH_DRIVER=dev)', () => {
     });
     expect(after.status).toBe(401);
     expect(after.body.error.code).toBe('UNAUTHORIZED');
+
+    const login = await api<User>('POST', '/api/auth/login', {
+      body: { userId: 'alice' },
+      as: 'guest',
+    });
+    expect(login.status).toBe(200);
+    expect(login.body).toEqual(signUp.body);
+    const again = await api<User>('GET', '/api/auth/me', {
+      headers: { cookie: cookieFrom(login.headers) },
+    });
+    expect(again.body.id).toBe('alice');
   });
 
-  test('the first sign-in creates the user; later ones return the same user', async () => {
-    const first = await api<User>('POST', '/api/auth/dev-login', { body: { userId: 'bob' } });
-    const again = await api<User>('POST', '/api/auth/dev-login', { body: { userId: 'bob' } });
-    expect(again.status).toBe(200);
-    expect(again.body).toEqual(first.body);
+  test('the bio is optional; a blank one is stored as null', async () => {
+    const noBio = await api<User>('POST', '/api/auth/sign-up', {
+      body: { userId: 'nobio', displayName: 'No bio' },
+      as: 'guest',
+    });
+    expect(noBio.status).toBe(201);
+    expect(noBio.body.bio).toBeNull();
+    const blank = await api<User>('POST', '/api/auth/sign-up', {
+      body: { userId: 'blankbio', displayName: 'Blank bio', bio: '   ' },
+      as: 'guest',
+    });
+    expect(blank.body.bio).toBeNull();
+  });
+
+  test('signing up with a taken id is 409 CONFLICT and changes nothing', async () => {
+    await api('POST', '/api/auth/sign-up', {
+      body: { userId: 'taken', displayName: 'First' },
+      as: 'guest',
+    });
+    const { status, body, headers } = await api<{ error: { code: string; message: string } }>(
+      'POST',
+      '/api/auth/sign-up?lang=ko',
+      { body: { userId: 'taken', displayName: 'Second' }, as: 'guest' },
+    );
+    expect(status).toBe(409);
+    expect(body.error).toMatchObject({ code: 'CONFLICT', message: '이미 존재합니다.' });
+    expect(headers.get('set-cookie')).toBeNull();
+
+    const login = await api<User>('POST', '/api/auth/login', {
+      body: { userId: 'taken' },
+      as: 'guest',
+    });
+    expect(login.body.displayName).toBe('First');
+  });
+
+  test('logging in with an id nobody signed up with is 404 — it does not create a member', async () => {
+    const first = await api<{ error: { code: string } }>('POST', '/api/auth/login', {
+      body: { userId: 'stranger' },
+      as: 'guest',
+    });
+    expect(first.status).toBe(404);
+    expect(first.body.error.code).toBe('NOT_FOUND');
+    expect(first.headers.get('set-cookie')).toBeNull();
+    const second = await api('POST', '/api/auth/login', {
+      body: { userId: 'stranger' },
+      as: 'guest',
+    });
+    expect(second.status).toBe(404);
   });
 
   test('me without a session is 401 with the localized envelope', async () => {
@@ -342,9 +403,24 @@ describe('auth (AUTH_DRIVER=dev)', () => {
     expect(status).toBe(401);
   });
 
-  test('rejects malformed user ids', async () => {
+  test('rejects malformed sign-up and login bodies', async () => {
     for (const userId of ['', 'Alice', 'has space', 'x'.repeat(51)]) {
-      const { status } = await api('POST', '/api/auth/dev-login', { body: { userId } });
+      const signUp = await api('POST', '/api/auth/sign-up', {
+        body: { userId, displayName: 'Name' },
+        as: 'guest',
+      });
+      expect(signUp.status).toBe(400);
+      const login = await api('POST', '/api/auth/login', { body: { userId }, as: 'guest' });
+      expect(login.status).toBe(400);
+    }
+    for (const body of [
+      { userId: 'nick1' }, // nickname is required
+      { userId: 'nick2', displayName: '   ' },
+      { userId: 'nick3', displayName: 'x'.repeat(31) },
+      { userId: 'bio1', displayName: 'Bio', bio: 'x'.repeat(501) },
+      { userId: 'extra', displayName: 'Extra', password: 'nope' }, // strict: no passwords
+    ]) {
+      const { status } = await api('POST', '/api/auth/sign-up', { body, as: 'guest' });
       expect(status).toBe(400);
     }
   });
