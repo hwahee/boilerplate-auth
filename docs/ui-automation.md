@@ -49,7 +49,10 @@
 | 영역          | testid                                                                                                                                          |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | 앱 셸         | `app.header`, `app.header.home-link` (서비스명 = 홈 링크)                                                                                       |
-| 계정 (헤더)   | `app.account.form` / `.user-id` / `.sign-in`, `app.account.user` / `.sign-out`                                                                  |
+| 계정 (헤더)   | `app.account.sign-in` / `.sign-up` (로그아웃 상태), `app.account.user` / `.sign-out`                                                            |
+| 로그인        | `login.page`, `login.form` / `.user-id` / `.submit`, `login.sign-up-link`, `login.disabled`                                                     |
+| 회원가입      | `sign-up.page`, `sign-up.form` / `.user-id` / `.display-name` / `.bio` / `.submit`, `sign-up.error`, `sign-up.login-link`                       |
+| 로그아웃      | `logout.page`, `logout.confirm` / `.cancel`, `logout.done`, `logout.not-signed-in`, `logout.home-link` / `.login-link`                          |
 | 푸터          | `app.footer`, `app.controls.*`, `app.nav.design-system`, `app.footer.services`, `app.footer.github`, `app.footer.copyright`, `app.footer.legal` |
 | Todos 생성    | `todos.create.form` / `.input` / `.submit` (+ `todos.create.input.error`)                                                                       |
 | Todos 게스트  | `todos.guest-hint` — 게스트에게 쓰기 대신 보이는 안내 (쓰기 UI는 회원에게만 렌더링)                                                             |

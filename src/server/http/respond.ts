@@ -14,7 +14,7 @@ import type { MessageKey } from '@shared/i18n';
 import { ValidationError } from '@shared/validation';
 
 import type { ServerConfig } from '../config';
-import { NotFoundError, UnauthorizedError } from '../lib/errors';
+import { ConflictError, NotFoundError, UnauthorizedError } from '../lib/errors';
 import type { Logger } from '../lib/log';
 import { createRequestContext, type RequestContext } from './context';
 import { corsHeaders, preflightResponse } from './cors';
@@ -30,6 +30,7 @@ const ERROR_MESSAGE_KEYS: Record<ApiErrorCode, MessageKey> = {
   VALIDATION_ERROR: 'error.validation',
   UNAUTHORIZED: 'error.unauthorized',
   NOT_FOUND: 'error.notFound',
+  CONFLICT: 'error.conflict',
   VERSION_MISMATCH: 'error.versionMismatch',
   INTERNAL_ERROR: 'error.internal',
 };
@@ -127,6 +128,9 @@ function mapError(error: unknown, ctx: RequestContext, log: Logger): Response {
   }
   if (error instanceof NotFoundError) {
     return errorResponse(404, 'NOT_FOUND', ctx, { resource: error.resource, id: error.id });
+  }
+  if (error instanceof ConflictError) {
+    return errorResponse(409, 'CONFLICT', ctx, { resource: error.resource, id: error.id });
   }
   log.error('unhandled error in api handler', {
     error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),

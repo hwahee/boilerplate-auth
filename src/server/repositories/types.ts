@@ -56,7 +56,8 @@ export interface TodoRepository {
 
 export interface UserRepository {
   findById(id: string, session?: DbSession): Promise<User | null>;
-  insert(user: User, session?: DbSession): Promise<void>;
+  /** Returns `false` (and writes nothing) when the id is already taken. */
+  insert(user: User, session?: DbSession): Promise<boolean>;
 }
 
 export interface ChatRoomRepository {

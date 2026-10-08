@@ -7,7 +7,7 @@
  */
 import type { Page } from '@shared/api/pagination';
 import type { Todo, TodoStatus } from '@shared/domain/todo';
-import type { User } from '@shared/domain/user';
+import type { SignUpInput, User } from '@shared/domain/user';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
@@ -47,11 +47,20 @@ export function useCaller(): 'member' | 'guest' | 'anyone' | 'unknown' {
   return 'unknown';
 }
 
-/** Signs in by user id; the returned user becomes the cached `me` directly. */
-export function useDevLogin() {
+/** Registers and signs in; the new user becomes the cached `me` directly. */
+export function useSignUp() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (userId: string) => authApi.devLogin({ userId }),
+    mutationFn: (input: SignUpInput) => authApi.signUp(input),
+    onSuccess: (user) => queryClient.setQueryData<User | null>(authKeys.me, user),
+  });
+}
+
+/** Signs in by a registered id; the user becomes the cached `me` directly. */
+export function useLogin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => authApi.login({ userId }),
     onSuccess: (user) => queryClient.setQueryData<User | null>(authKeys.me, user),
   });
 }

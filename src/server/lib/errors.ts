@@ -9,6 +9,17 @@ export class NotFoundError extends Error {
   }
 }
 
+/** Creating something that already exists, e.g. signing up with a taken user id. */
+export class ConflictError extends Error {
+  constructor(
+    readonly resource: string,
+    readonly id: string,
+  ) {
+    super(`${resource} already exists: ${id}`);
+    this.name = 'ConflictError';
+  }
+}
+
 /** The operation needs a signed-in user and the request has none. */
 export class UnauthorizedError extends Error {
   constructor() {
