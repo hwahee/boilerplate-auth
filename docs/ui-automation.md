@@ -46,23 +46,24 @@
 
 전체 목록은 `src/client/testing/testids.ts`가 소스 오브 트루스입니다. 주요 항목:
 
-| 영역          | testid                                                                                                                    |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 앱 셸         | `app.header`, `app.nav.todos`, `app.nav.design-system`, `app.controls.*`                                                  |
-| 계정 (헤더)   | `app.account.sign-in` / `.sign-up` (로그아웃 상태), `app.account.user` / `.sign-out`                                      |
-| 로그인        | `login.page`, `login.form` / `.user-id` / `.submit`, `login.sign-up-link`, `login.disabled`                               |
-| 회원가입      | `sign-up.page`, `sign-up.form` / `.user-id` / `.display-name` / `.bio` / `.submit`, `sign-up.error`, `sign-up.login-link` |
-| 로그아웃      | `logout.page`, `logout.confirm` / `.cancel`, `logout.done`, `logout.not-signed-in`, `logout.home-link` / `.login-link`    |
-| Todos 생성    | `todos.create.form` / `.input` / `.submit` (+ `todos.create.input.error`)                                                 |
-| Todos 게스트  | `todos.guest-hint` — 게스트에게 쓰기 대신 보이는 안내 (쓰기 UI는 회원에게만 렌더링)                                       |
-| Todos 목록    | `todos.list`, `todos.item.<id>`, `todos.item.<id>.toggle`, `todos.item.<id>.delete`                                       |
-| Todos 상태    | `todos.loading`, `todos.error`, `todos.error.retry`, `todos.empty`, `todos.total-count`                                   |
-| 필터/정렬     | `todos.filter.status`, `todos.sort.by`                                                                                    |
-| 페이지네이션  | `todos.pagination` / `.prev` / `.next` / `.status`                                                                        |
-| 홈 채팅       | `home.page`, `home.chat.panel` / `.status` / `.participants` / `.log` / `.empty`                                          |
-| 홈 채팅 입력  | `home.chat.form` / `.input` / `.send` (+ `home.chat.input.error`), `home.chat.message.<seq>`                              |
-| 디자인 시스템 | `design-system.page`, `design-system.section.<name>`, `ds.*` (쇼케이스 컴포넌트)                                          |
-| NotFound      | `not-found.page`, `not-found.home-link`                                                                                   |
+| 영역          | testid                                                                                                                                                            |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 앱 셸         | `app.header`, `app.nav.todos`, `app.nav.design-system`, `app.controls.*`                                                                                          |
+| 계정 (헤더)   | `app.account.sign-in` / `.sign-up` (로그아웃 상태), `app.account.user` / `.sign-out`                                                                              |
+| 로그인        | `login.page`, `login.form` / `.user-id` / `.submit`, `login.sign-up-link`, `login.disabled`, `login.expired`, `login.returning`                                   |
+| 회원가입      | `sign-up.page`, `sign-up.form` / `.user-id` / `.display-name` / `.bio` / `.submit`, `sign-up.error`, `sign-up.login-link`, `sign-up.expired`, `sign-up.returning` |
+| 로그아웃      | `logout.page`, `logout.confirm` / `.cancel`, `logout.signing-out`, `logout.expired`, `logout.not-signed-in`, `logout.login-link`                                  |
+| 로그아웃 완료 | `logged-out.page`, `logged-out.done`, `logged-out.home-link` / `.login-link`                                                                                      |
+| Todos 생성    | `todos.create.form` / `.input` / `.submit` (+ `todos.create.input.error`)                                                                                         |
+| Todos 게스트  | `todos.guest-hint` — 게스트에게 쓰기 대신 보이는 안내 (쓰기 UI는 회원에게만 렌더링)                                                                               |
+| Todos 목록    | `todos.list`, `todos.item.<id>`, `todos.item.<id>.toggle`, `todos.item.<id>.delete`                                                                               |
+| Todos 상태    | `todos.loading`, `todos.error`, `todos.error.retry`, `todos.empty`, `todos.total-count`                                                                           |
+| 필터/정렬     | `todos.filter.status`, `todos.sort.by`                                                                                                                            |
+| 페이지네이션  | `todos.pagination` / `.prev` / `.next` / `.status`                                                                                                                |
+| 홈 채팅       | `home.page`, `home.chat.panel` / `.status` / `.participants` / `.log` / `.empty`                                                                                  |
+| 홈 채팅 입력  | `home.chat.form` / `.input` / `.send` (+ `home.chat.input.error`), `home.chat.message.<seq>`                                                                      |
+| 디자인 시스템 | `design-system.page`, `design-system.section.<name>`, `ds.*` (쇼케이스 컴포넌트)                                                                                  |
+| NotFound      | `not-found.page`, `not-found.home-link`                                                                                                                           |
 
 `TextField`는 에러 표시 시 자동으로 `` `${testId}.error` `` 요소를 추가합니다. `TextArea`도 같고,
 힌트(글자 수 등)가 있으면 `` `${testId}.hint` ``를 더합니다.
