@@ -14,6 +14,8 @@ export type ApiErrorCode =
   /** 401 — the request carries no (valid) signed-in user. */
   | 'UNAUTHORIZED'
   | 'NOT_FOUND'
+  /** 409 — the thing to create already exists (e.g. a user id that is taken). */
+  | 'CONFLICT'
   | 'VERSION_MISMATCH'
   | 'INTERNAL_ERROR';
 

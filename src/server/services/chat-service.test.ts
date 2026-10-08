@@ -204,6 +204,7 @@ describe('ChatService.participantFor', () => {
     store.users.set('alice', {
       id: 'alice',
       displayName: 'Alice',
+      bio: null,
       createdAt: toUtcIso(new Date()),
     });
     const participant = await makeService().participantFor(

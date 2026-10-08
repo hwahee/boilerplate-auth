@@ -13,7 +13,10 @@ import { AccountControls } from './auth/account-controls';
 import { LocaleProvider, useI18n } from './i18n/locale-context';
 import { DesignSystemPage } from './pages/design-system-page';
 import { HomePage } from './pages/home-page';
+import { LoginPage } from './pages/login-page';
+import { LogoutPage } from './pages/logout-page';
 import { NotFoundPage } from './pages/not-found-page';
+import { SignUpPage } from './pages/sign-up-page';
 import { TESTID } from './testing/testids';
 import { nextDesign, ThemeProvider, useTheme, type Design } from './theme/theme-context';
 import { Button } from './ui/button';
@@ -107,6 +110,9 @@ function Shell() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/design-system" element={<DesignSystemPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/sign-up" element={<SignUpPage />} />
+          <Route path="/logout" element={<LogoutPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
