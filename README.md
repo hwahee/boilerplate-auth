@@ -162,12 +162,17 @@ SIGTERM/SIGINT 수신 시: ① readiness가 즉시 503으로 바뀌어 LB가 트
 
 - **드라이버 교체**: `AUTH_DRIVER=none|dev` (미설정 시 `none`, `.env.example`은 `dev`).
   - `none` — 로그인 없음. `/api/auth/*`가 마운트되지 않아 JSON 404이고, 헤더 컨트롤도 숨겨집니다.
-  - `dev` — 아이디만으로 로그인. **처음 로그인한 아이디가 곧 가입**입니다(`users` 행 + 감사 로그).
-    아이디를 알면 누구나 그 계정으로 들어가므로 `APP_ENV=production`에서는 부팅을 거부합니다.
+  - `dev` — **회원가입**(아이디·닉네임·자기소개(선택))을 한 뒤, **가입한 아이디만으로 로그인**합니다.
+    비밀번호는 없습니다. 가입하지 않은 아이디로는 로그인되지 않습니다(404). 아이디를 알면 누구나 그
+    계정으로 들어가므로 `APP_ENV=production`에서는 부팅을 거부합니다.
   - 외부 로그인은 드라이버 하나를 더하는 것으로 붙입니다 — 쿠키에 무엇을 담고 어떻게 검증하는지는
     `src/server/auth/session.ts` 한 곳에만 있습니다.
-- **API**: `POST /api/auth/dev-login {userId}` → `User` + 세션 쿠키, `GET /api/auth/me` →
-  `User | 401`, `POST /api/auth/logout` → 204. 상세는 `src/client/api/endpoints.ts`의 `authApi`.
+- **API**: `POST /api/auth/sign-up {userId, displayName, bio?}` → 201 `User` + 세션 쿠키
+  (아이디가 이미 있으면 409 `CONFLICT`), `POST /api/auth/login {userId}` → `User` + 세션 쿠키
+  (가입되지 않은 아이디면 404 `NOT_FOUND`), `GET /api/auth/me` → `User | 401`,
+  `POST /api/auth/logout` → 204. 상세는 `src/client/api/endpoints.ts`의 `authApi`.
+- **화면**: 로그인(`/login`), 회원가입(`/sign-up`), 로그아웃(`/logout`)은 각각 자기 페이지에서
+  진행합니다. 헤더는 이 페이지들로 이동만 합니다. 로그아웃도 확인 버튼을 누르는 페이지입니다.
 - **신원 전달**: 라우트는 `ctx.caller`(`src/server/http/context.ts`)만 읽습니다 — `member`(로그인),
   `guest`(로그인 기능은 있지만 로그인 안 함), `anyone`(`none` — 구분 없음). 클라이언트의
   `useCaller()`가 같은 셋(+ 로딩 중 `unknown`)을 돌려줍니다.
