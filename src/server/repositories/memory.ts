@@ -123,8 +123,9 @@ export function createMemoryUserRepository(store: MemoryStore): UserRepository {
     },
 
     async insert(user) {
+      if (store.users.has(user.id)) return Promise.resolve(false);
       store.users.set(user.id, { ...user });
-      return Promise.resolve();
+      return Promise.resolve(true);
     },
   };
 }

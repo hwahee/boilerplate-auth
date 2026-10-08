@@ -42,7 +42,9 @@ beforeAll(async () => {
   server = Bun.serve({ port: 0, ...buildApp(container, { shuttingDown: false }) });
   stopChat = await container.chatGateway().start();
   baseUrl = String(server.url).replace(/\/$/, '');
-  const login = await api('POST', '/api/auth/dev-login', { body: { userId: 'alice' } });
+  const login = await api('POST', '/api/auth/sign-up', {
+    body: { userId: 'alice', displayName: 'Alice' },
+  });
   memberCookie = (login.headers.get('set-cookie') ?? '').split(';')[0] ?? '';
 });
 
@@ -206,7 +208,7 @@ describe('chat over HTTP', () => {
       cookie: memberCookie,
     });
     expect(status).toBe(201);
-    expect(body.author).toEqual({ kind: 'member', userId: 'alice', displayName: 'alice' });
+    expect(body.author).toEqual({ kind: 'member', userId: 'alice', displayName: 'Alice' });
   });
 
   test('a guest without a guest id, or a blank text, is 400', async () => {
@@ -298,7 +300,7 @@ describe('chat over /ws/chat', () => {
     await tab2.join();
     const everyone = await guest.presence(2);
     expect(everyone).toContainEqual({ kind: 'guest', guestId: GUEST_ID });
-    expect(everyone).toContainEqual({ kind: 'member', userId: 'alice', displayName: 'alice' });
+    expect(everyone).toContainEqual({ kind: 'member', userId: 'alice', displayName: 'Alice' });
     // A late joiner learns who was already there from its snapshot.
     expect(await tab2.presence(2)).toHaveLength(2);
 
