@@ -21,3 +21,23 @@ describe('loadServerConfig — AUTH_DRIVER', () => {
     ).toThrow('AUTH_DRIVER=dev must never run with APP_ENV=production');
   });
 });
+
+describe('loadServerConfig — Hydra', () => {
+  test('optional: without it the pages work on their own', () => {
+    const config = loadServerConfig({ DB_DRIVER: 'memory', HYDRA_PUBLIC_URL: '' });
+    expect(config.hydraPublicUrl).toBeUndefined();
+    expect(config.hydraAdminUrl).toBeUndefined();
+  });
+
+  test('the public and admin URLs come together or not at all', () => {
+    const both = loadServerConfig({
+      DB_DRIVER: 'memory',
+      HYDRA_PUBLIC_URL: 'http://localhost:4444',
+      HYDRA_ADMIN_URL: 'http://localhost:4445',
+    });
+    expect(both.hydraPublicUrl).toBe('http://localhost:4444');
+    expect(() =>
+      loadServerConfig({ DB_DRIVER: 'memory', HYDRA_PUBLIC_URL: 'http://localhost:4444' }),
+    ).toThrow('HYDRA_PUBLIC_URL and HYDRA_ADMIN_URL are set together or not at all');
+  });
+});

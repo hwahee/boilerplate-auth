@@ -13,6 +13,7 @@
  */
 import type { ServerConfig } from './config';
 import { createPostgresDb, createPostgresUnitOfWork, type PostgresDb } from './db/postgres';
+import { createHydraClient, type HydraClient } from './identity/hydra';
 import { createLogger, type Logger } from './lib/log';
 import { createPresenceStore, type PresenceStore } from './presence';
 import { createPubSub, type PubSub } from './pubsub';
@@ -23,6 +24,7 @@ import {
   createMemoryChatRoomRepository,
   createMemoryTodoRepository,
   createMemoryUnitOfWork,
+  createMemoryMembershipRepository,
   createMemoryUserRepository,
   MemoryStore,
 } from './repositories/memory';
@@ -31,18 +33,21 @@ import {
   createPostgresChatMessageRepository,
   createPostgresChatRoomRepository,
   createPostgresTodoRepository,
+  createPostgresMembershipRepository,
   createPostgresUserRepository,
 } from './repositories/postgres';
 import type {
   AuditLogRepository,
   ChatMessageRepository,
   ChatRoomRepository,
+  MembershipRepository,
   TodoRepository,
   UnitOfWork,
   UserRepository,
 } from './repositories/types';
 import { AuthService } from './services/auth-service';
 import { ChatService } from './services/chat-service';
+import { IdentityService } from './services/identity-service';
 import { TodoService } from './services/todo-service';
 
 export interface Container {
@@ -50,6 +55,8 @@ export interface Container {
   readonly log: Logger;
   todoService(): TodoService;
   authService(): AuthService;
+  /** Answers the login / consent / logout requests Hydra hands this app. */
+  identityService(): IdentityService;
   chatService(): ChatService;
   /** This process's chat sockets — one per process, like everything here. */
   chatGateway(): ChatGateway;
@@ -77,6 +84,8 @@ export interface ContainerOverrides {
   log?: Logger;
   pubsub?: PubSub;
   presence?: PresenceStore;
+  /** Stands in for Hydra's admin API (tests); `null` = none configured. */
+  hydra?: HydraClient | null;
 }
 
 export function createContainer(
@@ -103,6 +112,11 @@ export function createContainer(
     config.dbDriver === 'postgres'
       ? createPostgresUserRepository(postgres())
       : createMemoryUserRepository(memoryStore()),
+  );
+  const membershipRepository = lazy<MembershipRepository>(() =>
+    config.dbDriver === 'postgres'
+      ? createPostgresMembershipRepository(postgres())
+      : createMemoryMembershipRepository(memoryStore()),
   );
   const auditLogRepository = lazy<AuditLogRepository>(() =>
     config.dbDriver === 'postgres'
@@ -147,6 +161,15 @@ export function createContainer(
       }),
   );
 
+  const identityService = lazy(
+    () =>
+      new IdentityService({
+        hydra: overrides.hydra === undefined ? createHydraClient(config) : overrides.hydra,
+        users: userRepository(),
+        memberships: membershipRepository(),
+      }),
+  );
+
   const chatService = lazy(
     () =>
       new ChatService({
@@ -174,6 +197,7 @@ export function createContainer(
     log,
     todoService,
     authService,
+    identityService,
     chatService,
     chatGateway,
     pubsub,

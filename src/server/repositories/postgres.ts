@@ -15,6 +15,7 @@ import type {
   ChatMessageRepository,
   ChatRoomRepository,
   DbSession,
+  MembershipRepository,
   TodoRepository,
   UserRepository,
 } from './types';
@@ -126,6 +127,26 @@ interface UserRow {
   display_name: string;
   bio: string | null;
   created_at: Date;
+}
+
+export function createPostgresMembershipRepository(db: PostgresDb): MembershipRepository {
+  return {
+    async ensure(userId, service, session) {
+      const sql = sessionSql(db, session);
+      await sql`
+        INSERT INTO memberships (user_id, service) VALUES (${userId}, ${service})
+        ON CONFLICT (user_id, service) DO NOTHING
+      `;
+    },
+
+    async servicesOf(userId, session) {
+      const sql = sessionSql(db, session);
+      const rows = await sql<{ service: string }[]>`
+        SELECT service FROM memberships WHERE user_id = ${userId} ORDER BY joined_at, service
+      `;
+      return rows.map((row) => row.service);
+    },
+  };
 }
 
 export function createPostgresUserRepository(db: PostgresDb): UserRepository {

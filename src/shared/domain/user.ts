@@ -25,6 +25,12 @@ export interface User {
  */
 const userIdSchema = s.string().check(s.minLength(1), s.maxLength(50), s.regex(/^[a-z0-9_-]+$/));
 
+/**
+ * A Hydra challenge: the opaque, one-time handle of a login or logout a
+ * service started (`login_challenge` / `logout_challenge` on the page URL).
+ */
+const challengeSchema = s.string().check(s.minLength(1), s.maxLength(4096));
+
 /** Longest nickname; the database allows more, so this is the binding limit. */
 export const NICKNAME_MAX_LENGTH = 30;
 /** Longest bio; the database enforces the same limit. */
@@ -44,10 +50,44 @@ export const signUpValidator = toValidator(
       s.refine((value) => value.trim().length > 0, { message: 'Nickname must not be blank' }),
     ),
     bio: s.optional(s.string().check(s.maxLength(BIO_MAX_LENGTH))),
+    /** Present when a service sent the visitor here to sign in. */
+    loginChallenge: s.optional(challengeSchema),
   }),
 );
 export type SignUpInput = Infer<typeof signUpValidator>;
 
 /** Body of `POST /api/auth/login` — the id alone (development stage). */
-export const loginValidator = toValidator(s.strictObject({ userId: userIdSchema }));
+export const loginValidator = toValidator(
+  s.strictObject({ userId: userIdSchema, loginChallenge: s.optional(challengeSchema) }),
+);
 export type LoginInput = Infer<typeof loginValidator>;
+
+/** Body of `POST /api/auth/login/resume` — a service sent someone to sign in. */
+export const loginResumeValidator = toValidator(
+  s.strictObject({ loginChallenge: challengeSchema }),
+);
+
+/** Body of `POST /api/auth/logout` — the challenge when a service asked for it. */
+export const logoutValidator = toValidator(
+  s.strictObject({ logoutChallenge: s.optional(challengeSchema) }),
+);
+
+/**
+ * What sign-up and sign-in answer: the member, and — when a service sent
+ * them here — where to send the browser to finish (`null` otherwise).
+ */
+export interface SignInResult {
+  user: User;
+  redirectTo: string | null;
+}
+
+/** What `POST /api/auth/login/resume` answers. */
+export type LoginResumption =
+  { redirectTo: string } | { redirectTo: null; service: { id: string; name: string } };
+
+/** What `GET /api/auth/logout-request` answers. */
+export interface LogoutRequestInfo {
+  displayName: string | null;
+  /** The member already confirmed signing out on this app's page. */
+  confirmed: boolean;
+}

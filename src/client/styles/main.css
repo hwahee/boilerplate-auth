@@ -222,6 +222,13 @@ a {
   margin-block: var(--space-4);
 }
 
+/* "Taking you back…" while the browser is about to leave the page. */
+.auth-page__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 /* `1 0 auto` rather than `flex: 1`: the basis stays at the content's natural
    height, so tall pages are never asked to shrink into the viewport. */
 .app-main {

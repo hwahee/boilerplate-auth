@@ -14,6 +14,7 @@ import { AccountControls } from './auth/account-controls';
 import { LocaleProvider, useI18n } from './i18n/locale-context';
 import { DesignSystemPage } from './pages/design-system-page';
 import { HomePage } from './pages/home-page';
+import { LoggedOutPage } from './pages/logged-out-page';
 import { LoginPage } from './pages/login-page';
 import { LogoutPage } from './pages/logout-page';
 import { NotFoundPage } from './pages/not-found-page';
@@ -98,6 +99,7 @@ function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/sign-up" element={<SignUpPage />} />
         <Route path="/logout" element={<LogoutPage />} />
+        <Route path="/logged-out" element={<LoggedOutPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 

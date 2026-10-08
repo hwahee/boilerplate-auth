@@ -21,6 +21,7 @@ import type {
   ChatRoomRepository,
   DbSession,
   TodoRepository,
+  MembershipRepository,
   UnitOfWork,
   UserRepository,
 } from './types';
@@ -31,6 +32,8 @@ type MemoryTables = Omit<MemoryStore, 'snapshot' | 'restore'>;
 export class MemoryStore {
   todos = new Map<string, Todo>();
   users = new Map<string, User>();
+  /** `${userId}\u0000${service}` → when they joined, in join order. */
+  memberships = new Map<string, { userId: string; service: string; joinedAt: string }>();
   auditLogs: AuditLogEntry[] = [];
   chatRooms = new Map<string, { room: ChatRoom; lastSeq: number }>();
   /** Per room, in `seq` order. */
@@ -111,6 +114,26 @@ export function createMemoryTodoRepository(store: MemoryStore): TodoRepository {
 
     async deleteById(id) {
       return Promise.resolve(store.todos.delete(id));
+    },
+  };
+}
+
+export function createMemoryMembershipRepository(store: MemoryStore): MembershipRepository {
+  return {
+    async ensure(userId, service) {
+      const key = `${userId}\u0000${service}`;
+      if (!store.memberships.has(key)) {
+        store.memberships.set(key, { userId, service, joinedAt: new Date().toISOString() });
+      }
+      return Promise.resolve();
+    },
+
+    async servicesOf(userId) {
+      return Promise.resolve(
+        [...store.memberships.values()]
+          .filter((membership) => membership.userId === userId)
+          .map((membership) => membership.service),
+      );
     },
   };
 }
