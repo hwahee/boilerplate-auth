@@ -1,0 +1,8 @@
+[
+  {
+    "id": "boilerplate",
+    "name": "Boilerplate",
+    "secret": "local-only-boilerplate-client-secret",
+    "origin": "http://localhost:3000"
+  }
+]

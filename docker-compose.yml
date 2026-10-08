@@ -2,6 +2,7 @@
 #
 #   docker compose up -d db          # Postgres only (bun run db:up)
 #   docker compose --profile redis up -d   # + Redis (for PUBSUB_DRIVER=redis)
+#   docker compose --profile hydra up -d hydra  # + Ory Hydra (bun run hydra:up)
 #   docker compose --profile app up --build  # containerized build of the app itself
 #
 # Credentials come from .env (see .env.example) — never hardcode secrets here.
@@ -28,6 +29,49 @@ services:
     ports:
       - '6379:6379'
 
+  # Ory Hydra (OIDC provider) keeps its own database next to the app's, so
+  # replacing Hydra never touches member data. hydra-db creates it once.
+  hydra-db:
+    profiles: [hydra]
+    image: postgres:16-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-app}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-app_local_password}
+      PGDATABASE: ${POSTGRES_DB:-app}
+    entrypoint: ['sh', '-c']
+    command:
+      - psql -tAc "SELECT 1 FROM pg_database WHERE datname = 'hydra'" | grep -q 1 || psql -c 'CREATE DATABASE hydra'
+
+  hydra-migrate:
+    profiles: [hydra]
+    image: oryd/hydra:v2.3.0
+    depends_on:
+      hydra-db:
+        condition: service_completed_successfully
+    environment:
+      DSN: postgres://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_local_password}@db:5432/hydra?sslmode=disable
+    command: migrate sql up -e --yes
+
+  hydra:
+    profiles: [hydra]
+    image: oryd/hydra:v2.3.0
+    depends_on:
+      hydra-migrate:
+        condition: service_completed_successfully
+    environment:
+      DSN: postgres://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_local_password}@db:5432/hydra?sslmode=disable
+    # --dev: plain http on localhost. Never in deployed environments.
+    command: serve all --dev --config /etc/hydra/hydra.yml
+    volumes:
+      - ./hydra/hydra.yml:/etc/hydra/hydra.yml:ro
+    ports:
+      - '4444:4444' # public: the OIDC issuer browsers and services talk to
+      - '4445:4445' # admin: only this member server talks to it
+
   app:
     profiles: [app]
     build: .
@@ -36,13 +80,13 @@ services:
         condition: service_healthy
     environment:
       APP_ENV: development
-      PORT: 3000
+      PORT: 3100
       DB_DRIVER: postgres
       DATABASE_URL: postgres://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_local_password}@db:5432/${POSTGRES_DB:-app}
       CORS_ORIGINS: ''
       SERVER_ROLE: all
     ports:
-      - '3000:3000'
+      - '3100:3100'
 
 volumes:
   db-data:

@@ -25,6 +25,8 @@
     "db:seed": "bun run scripts/seed.ts",
     "db:setup": "bun run db:up && bun run scripts/wait-for-db.ts && bun run db:migrate && bun run db:seed",
     "chat:load": "bun run scripts/chat-load.ts",
+    "hydra:up": "docker compose --profile hydra up -d hydra",
+    "services:register": "bun run scripts/register-services.ts",
     "prepare": "husky"
   },
   "lint-staged": {
