@@ -29,8 +29,10 @@
 - 회원가입은 **아이디·닉네임·자기소개(선택)**만 받습니다. **가입한 아이디로만** 로그인합니다
   (개발 단계, 비밀번호 없음). 로그인은 회원을 만들지 않습니다.
 - 회원 화면은 반드시 이 저장소의 디자인 시스템으로 만듭니다.
-- (예정) OIDC 프로토콜은 Ory Hydra가 맡습니다. Hydra 호출은 `src/server/identity/hydra.ts` 한
+- OIDC 프로토콜은 Ory Hydra가 맡습니다. Hydra 관리 API 호출은 `src/server/identity/hydra.ts` 한
   파일에만 두고(ESLint로 강제), 회원 ID(`sub`)는 Hydra가 아니라 이 저장소 DB의 ID입니다.
+- 서비스 목록(`services/*.json`)은 Hydra와 무관한 형식으로 둡니다. 서비스의 콜백·front-channel
+  logout 경로는 `src/server/identity/services.ts`의 규약을 따릅니다.
 
 ## 보일러플레이트와의 관계 — 확정된 원칙
 

@@ -1,0 +1,32 @@
+# Ory Hydra for local development (`bun run hydra:up`, see docker-compose.yml).
+#
+# Hydra speaks OIDC to the services; this member server answers its login,
+# consent and logout requests. Deployed environments set the same keys through
+# environment variables (URLS_SELF_ISSUER, URLS_LOGIN, …, SECRETS_SYSTEM), with
+# real secrets — never this file.
+serve:
+  cookies:
+    # Every service sits under one parent domain (CLAUDE.md), so Lax is enough —
+    # and browsers drop SameSite=None cookies over plain http.
+    same_site_mode: Lax
+
+urls:
+  self:
+    issuer: http://localhost:4444
+  login: http://localhost:3100/login
+  consent: http://localhost:3100/api/auth/consent
+  logout: http://localhost:3100/logout
+  # Every sign-out ends on the member server's page (CLAUDE.md).
+  post_logout_redirect: http://localhost:3100/logged-out
+
+secrets:
+  system:
+    - local-only-hydra-system-secret
+
+oidc:
+  subject_identifiers:
+    supported_types:
+      - public
+
+log:
+  level: info
