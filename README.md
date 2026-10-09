@@ -62,7 +62,8 @@ bun run hydra:up          # (서비스 로그인까지) docker로 Ory Hydra 기�
 bun run services:register # services/local.json의 서비스들을 Hydra에 등록 (다시 돌려도 안전)
 ```
 
-회원 서버는 3100 포트를 씁니다. 보일러플레이트로 만든 서비스들은 3000번대를 그대로 씁니다.
+회원 서버는 3100 포트, 그 DB는 5433 포트를 씁니다. 보일러플레이트로 만든 서비스들은 3000번대와 5432를
+그대로 쓰므로 함께 띄울 수 있습니다.
 
 DB 없이 바로 실행하려면 `.env`에서 `DB_DRIVER=memory`로 바꾸면 됩니다(테스트도 이 드라이버를 사용).
 다른 프로젝트의 Postgres와 함께 띄우려면 `.env`의 `POSTGRES_PORT`와 `DATABASE_URL`의 포트를 같이 바꿉니다
