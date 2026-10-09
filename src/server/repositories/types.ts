@@ -60,6 +60,14 @@ export interface UserRepository {
   insert(user: User, session?: DbSession): Promise<boolean>;
 }
 
+/** Which services a member has joined (first sign-in to a service records it). */
+export interface MembershipRepository {
+  /** Records `userId` joining `service`; a no-op when already recorded. */
+  ensure(userId: string, service: string, session?: DbSession): Promise<void>;
+  /** The services a member has joined, oldest first. */
+  servicesOf(userId: string, session?: DbSession): Promise<string[]>;
+}
+
 export interface ChatRoomRepository {
   findById(id: string, session?: DbSession): Promise<ChatRoom | null>;
   /** Creates the room, or gives the existing room with its id this policy. */

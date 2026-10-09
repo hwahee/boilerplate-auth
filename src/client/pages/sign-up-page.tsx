@@ -1,6 +1,8 @@
 /**
  * /sign-up — register with a user id, a nickname and an optional bio. No
- * password, by design (CLAUDE.md). A successful sign-up also signs in.
+ * password, by design (CLAUDE.md). A successful sign-up also signs in — and,
+ * when a service sent the visitor (`?login_challenge=`, carried over from
+ * /login), returns them to it.
  */
 import {
   BIO_MAX_LENGTH,
@@ -13,6 +15,12 @@ import { Link, Navigate } from 'react-router';
 
 import { ApiRequestError } from '../api/http';
 import { useCaller, useSignUp } from '../api/queries';
+import {
+  FlowStatus,
+  isExpiredRequest,
+  useChallenge,
+  withLoginChallenge,
+} from '../auth/flow-status';
 import { useI18n } from '../i18n/locale-context';
 import { TESTID } from '../testing/testids';
 import { Alert } from '../ui/alert';
@@ -29,6 +37,7 @@ export function SignUpPage() {
   const { t } = useI18n();
   const caller = useCaller();
   const signUp = useSignUp();
+  const loginChallenge = useChallenge('login_challenge');
 
   // The only local state: the uncommitted form (+ its validation errors).
   const [values, setValues] = useState<Record<Field, string>>({
@@ -38,8 +47,9 @@ export function SignUpPage() {
   });
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
 
-  // Signed in — including right after this page's own sign-up — goes home.
-  if (caller === 'member') return <Navigate to="/" replace />;
+  // Signed in on their own (no service waiting) — including right after this
+  // page's own sign-up — goes home.
+  if (loginChallenge === null && caller === 'member') return <Navigate to="/" replace />;
 
   const fieldMessages: Record<Field, string> = {
     userId: t('auth.userIdInvalid'),
@@ -60,6 +70,7 @@ export function SignUpPage() {
       userId: values.userId.trim(),
       displayName: values.displayName,
       ...(values.bio.trim() === '' ? {} : { bio: values.bio }),
+      ...(loginChallenge === null ? {} : { loginChallenge }),
     };
     const parsed = signUpValidator.safeParse(input);
     if (!parsed.ok) {
@@ -78,6 +89,9 @@ export function SignUpPage() {
   const failure = signUp.error instanceof ApiRequestError ? signUp.error : undefined;
   // A taken id belongs to the id field; anything else gets the page-level alert.
   const idTaken = failure?.code === 'CONFLICT';
+  const expired = isExpiredRequest(signUp.error);
+  // Signed up for a service: the browser is on its way back to it.
+  const leaving = loginChallenge !== null && signUp.isSuccess;
 
   return (
     <section
@@ -90,6 +104,12 @@ export function SignUpPage() {
         <Alert tone="info" testId={TESTID.signUp.disabled}>
           {t('auth.disabled')}
         </Alert>
+      ) : expired ? (
+        <Alert tone="error" testId={TESTID.signUp.expired}>
+          {t('auth.requestExpired')}
+        </Alert>
+      ) : leaving ? (
+        <FlowStatus text={t('auth.returning')} testId={TESTID.signUp.returning} />
       ) : (
         <>
           <p className="muted">{t('auth.signUp.description')}</p>
@@ -140,7 +160,10 @@ export function SignUpPage() {
           </form>
           <p>
             {t('auth.signUp.haveAccount')}{' '}
-            <Link to="/login" data-testid={TESTID.signUp.loginLink}>
+            <Link
+              to={withLoginChallenge('/login', loginChallenge)}
+              data-testid={TESTID.signUp.loginLink}
+            >
               {t('auth.signIn')}
             </Link>
           </p>

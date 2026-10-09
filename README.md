@@ -14,6 +14,7 @@ src/
 ├── server/          # Bun server (API + 클라이언트 서빙 + 워커)
 │   ├── http/        # 라우트 공통 미들웨어 (CORS, 버전, 에러 매핑, locale)
 │   ├── auth/        # 요청 신원 — AUTH_DRIVER별로 "누가 호출했나"를 읽는 유일한 자리
+│   ├── identity/    # Ory Hydra 어댑터(관리 API는 여기서만) + 서비스 등록 형식
 │   ├── routes/      # 엔드포인트 정의
 │   ├── services/    # 비즈니스 로직 (트랜잭션 경계가 여기서 드러남)
 │   ├── repositories/# 영속성 계약 + postgres/in-memory 구현
@@ -55,23 +56,31 @@ bun install               # 의존성 설치 (+ husky 훅 설치)
 cp .env.example .env      # 환경 설정 — 비밀값은 절대 커밋 금지
 
 bun run db:setup          # docker로 Postgres 기동 + 마이그레이션 + 시드 (한 번에)
-bun run dev               # 개발 서버 (서버 watch + 클라이언트 HMR) → http://localhost:3000
+bun run dev               # 개발 서버 (서버 watch + 클라이언트 HMR) → http://localhost:3100
+
+bun run hydra:up          # (서비스 로그인까지) docker로 Ory Hydra 기동 → :4444(public) / :4445(admin)
+bun run services:register # services/local.json의 서비스들을 Hydra에 등록 (다시 돌려도 안전)
 ```
+
+회원 서버는 3100 포트, 그 DB는 5433 포트를 씁니다. 보일러플레이트로 만든 서비스들은 3000번대와 5432를
+그대로 쓰므로 함께 띄울 수 있습니다.
 
 DB 없이 바로 실행하려면 `.env`에서 `DB_DRIVER=memory`로 바꾸면 됩니다(테스트도 이 드라이버를 사용).
 다른 프로젝트의 Postgres와 함께 띄우려면 `.env`의 `POSTGRES_PORT`와 `DATABASE_URL`의 포트를 같이 바꿉니다
 (다른 Postgres가 이미 그 포트를 쓰고 있으면 `db:setup`이 비밀번호 오류로 바로 멈춥니다).
 
-| 명령                      | 설명                                                                    |
-| ------------------------- | ----------------------------------------------------------------------- |
-| `bun run dev`             | 개발 모드. 서버 자동 재시작 + 클라이언트 HMR                            |
-| `bun test`                | 단위 + API 통합 테스트. 외부 환경 불필요 (in-memory DB), 한 번에 실행   |
-| `bun run check`           | prettier + eslint + tsc + knip + test 전체 게이트 (pre-push와 동일)     |
-| `bun run build`           | 프로덕션 빌드 → `dist/` (서버가 클라이언트를 포함하는 단일 산출물)      |
-| `bun run start`           | 빌드 산출물 실행                                                        |
-| `bun run db:*`            | `db:up` / `db:migrate` / `db:seed` / `db:setup`                         |
-| `bun run chat:load`       | 채팅 부하 테스트: 한 방에 N명 입장 + 메시지 전송 (`[인원] [메시지 수]`) |
-| `bun run compiler:report` | React Compiler가 컴파일하지 못한 컴포넌트·훅 목록 (`--all`: 전부)       |
+| 명령                        | 설명                                                                    |
+| --------------------------- | ----------------------------------------------------------------------- |
+| `bun run dev`               | 개발 모드. 서버 자동 재시작 + 클라이언트 HMR                            |
+| `bun test`                  | 단위 + API 통합 테스트. 외부 환경 불필요 (in-memory DB), 한 번에 실행   |
+| `bun run check`             | prettier + eslint + tsc + knip + test 전체 게이트 (pre-push와 동일)     |
+| `bun run build`             | 프로덕션 빌드 → `dist/` (서버가 클라이언트를 포함하는 단일 산출물)      |
+| `bun run start`             | 빌드 산출물 실행                                                        |
+| `bun run db:*`              | `db:up` / `db:migrate` / `db:seed` / `db:setup`                         |
+| `bun run chat:load`         | 채팅 부하 테스트: 한 방에 N명 입장 + 메시지 전송 (`[인원] [메시지 수]`) |
+| `bun run hydra:up`          | Ory Hydra(OIDC 공급자) 기동. 자기 DB(`hydra`)를 같은 Postgres에 둠      |
+| `bun run services:register` | 서비스 목록(`[파일]`, 기본 `services/local.json`)을 Hydra에 등록        |
+| `bun run compiler:report`   | React Compiler가 컴파일하지 못한 컴포넌트·훅 목록 (`--all`: 전부)       |
 
 ## 아키텍처 결정
 
@@ -167,12 +176,15 @@ SIGTERM/SIGINT 수신 시: ① readiness가 즉시 503으로 바뀌어 LB가 트
     계정으로 들어가므로 `APP_ENV=production`에서는 부팅을 거부합니다.
   - 외부 로그인은 드라이버 하나를 더하는 것으로 붙입니다 — 쿠키에 무엇을 담고 어떻게 검증하는지는
     `src/server/auth/session.ts` 한 곳에만 있습니다.
-- **API**: `POST /api/auth/sign-up {userId, displayName, bio?}` → 201 `User` + 세션 쿠키
-  (아이디가 이미 있으면 409 `CONFLICT`), `POST /api/auth/login {userId}` → `User` + 세션 쿠키
-  (가입되지 않은 아이디면 404 `NOT_FOUND`), `GET /api/auth/me` → `User | 401`,
-  `POST /api/auth/logout` → 204. 상세는 `src/client/api/endpoints.ts`의 `authApi`.
+- **API**: `POST /api/auth/sign-up {userId, displayName, bio?, loginChallenge?}` → 201
+  `{user, redirectTo}` + 세션 쿠키 (아이디가 이미 있으면 409 `CONFLICT`),
+  `POST /api/auth/login {userId, loginChallenge?}` → `{user, redirectTo}` + 세션 쿠키 (가입되지 않은
+  아이디면 404 `NOT_FOUND`), `GET /api/auth/me` → `User | 401`, `POST /api/auth/logout
+{logoutChallenge?}` → 204 또는 `{redirectTo}`. Hydra 흐름용 경로는 아래 "서비스 로그인" 절.
+  상세는 `src/client/api/endpoints.ts`의 `authApi`.
 - **화면**: 로그인(`/login`), 회원가입(`/sign-up`), 로그아웃(`/logout`)은 각각 자기 페이지에서
-  진행합니다. 헤더는 이 페이지들로 이동만 합니다. 로그아웃도 확인 버튼을 누르는 페이지입니다.
+  진행합니다. 헤더는 이 페이지들로 이동만 합니다. 로그아웃도 확인 버튼을 누르는 페이지이고,
+  어디서 로그아웃하든 `/logged-out`에서 끝납니다.
 - **신원 전달**: 라우트는 `ctx.caller`(`src/server/http/context.ts`)만 읽습니다 — `member`(로그인),
   `guest`(로그인 기능은 있지만 로그인 안 함), `anyone`(`none` — 구분 없음). 클라이언트의
   `useCaller()`가 같은 셋(+ 로딩 중 `unknown`)을 돌려줍니다.
@@ -188,6 +200,36 @@ SIGTERM/SIGINT 수신 시: ① readiness가 즉시 503으로 바뀌어 LB가 트
   쿠키가 전달되지 않습니다.
 - **아직 없는 것**: todos와 사용자의 연결(소유자 — 지금은 회원 모두가 한 목록을 함께 씀), 감사
   로그의 행위자, 서명된 쿠키, 외부 로그인.
+
+### 서비스 로그인 (Ory Hydra)
+
+이 저장소는 **회원 서버**입니다([CLAUDE.md](CLAUDE.md)). 보일러플레이트로 만든 서비스들은 OIDC
+표준으로 이 서버에 로그인을 맡기고, 프로토콜(리다이렉트 검증, 코드·토큰 발급, 서비스를 넘나드는
+로그인 유지)은 Ory Hydra가 처리합니다. Hydra는 회원도 화면도 갖지 않고, 로그인·동의·로그아웃마다
+"챌린지"를 이 서버에 넘겨 답을 받습니다.
+
+- **설정**: `HYDRA_PUBLIC_URL`과 `HYDRA_ADMIN_URL`은 함께 두거나 함께 비웁니다. 비우면 Hydra 없이
+  회원 화면만 동작합니다(Hydra 전용 경로는 404, 로그아웃은 바로 `/logged-out`).
+- **로그인**: 서비스 → Hydra → `/login?login_challenge=…`. 페이지는 먼저 `POST /api/auth/login/resume`
+  으로 화면이 필요한지 묻습니다 — Hydra가 이미 아는 사람(다른 서비스에서 로그인함)이거나 이 서버에
+  로그인해 있으면 화면 없이 서비스로 돌아갑니다. 아니면 "{서비스}에서 계속하려면 로그인하세요"를
+  보여 주고, 로그인·회원가입이 끝나면 같은 요청으로 돌아갑니다. 처음 들어가는 서비스면 그 서비스의
+  회원으로 기록합니다(`memberships` — 한 사람, 서비스별 가입).
+- **동의**: 화면 없이 `GET /api/auth/consent`가 요청받은 범위를 그대로 허락하고, 닉네임을 표준
+  `name` 클레임으로 id_token에 담습니다. `sub`는 이 서버 DB의 회원 아이디입니다.
+- **로그아웃**: 서비스 → Hydra → `/logout?logout_challenge=…`에서 확인 → Hydra가 모든 서비스의
+  front-channel logout 주소를 부른 뒤 `/logged-out`. `/logout`에 바로 온 경우엔 확인 후
+  `/api/auth/logout/start`가 같은 길(Hydra)로 보내되, 이미 확인했다는 표시(`confirmed=1`)를 실어
+  두 번 묻지 않습니다. 끝나면 이 서버의 세션 쿠키도 지워집니다.
+- **만료된 요청**: 챌린지가 만료됐거나 이미 답한 요청이면 페이지가 "서비스로 돌아가 다시
+  시도하세요"를 보여 줍니다(API는 `NOT_FOUND`, `details.resource`가 `… request`).
+- **서비스 등록**: `services/*.json`은 Hydra와 무관한 목록입니다 — `{id, name, secret, origin}`.
+  `id`는 서비스 이름(서브도메인)이자 OAuth client id이며 `auth`는 쓸 수 없습니다. 콜백은
+  `{origin}/api/auth/callback`, front-channel logout은 `{origin}/api/auth/frontchannel-logout`로
+  정해져 있습니다(모든 서비스가 보일러플레이트에서 출발하므로).
+- **교체 가능성**: Hydra 관리 API를 부르는 코드는 `src/server/identity/hydra.ts` 한 파일뿐이고(ESLint가
+  `hydraAdminUrl` 접근을 막음), 그 밖의 Hydra 전용 파일은 `hydra/hydra.yml`과 `docker-compose.yml`의
+  `hydra*` 서비스입니다. 서비스 쪽은 OIDC 표준에만 의존합니다.
 
 ### 채팅
 

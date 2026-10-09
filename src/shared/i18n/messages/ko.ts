@@ -92,7 +92,12 @@ export const ko: Record<MessageKey, string> = {
   'auth.signUp': '회원가입',
   'auth.disabled': '이 서버는 로그인 기능이 꺼져 있습니다 (AUTH_DRIVER=none).',
   'auth.goHome': '홈으로 이동',
+  'auth.requestExpired':
+    '로그인 요청이 만료되었거나 이미 처리되었습니다. 서비스로 돌아가 다시 시도해 주세요.',
+  'auth.returning': '서비스로 돌아가는 중…',
   'auth.login.description': '아이디만으로 로그인합니다. 개발 단계라 비밀번호는 없습니다.',
+  'auth.login.forService':
+    '{service}에서 계속하려면 로그인하세요. 개발 단계라 비밀번호는 없습니다.',
   'auth.login.notRegistered':
     '가입되지 않은 아이디입니다. 아이디를 확인하거나 먼저 회원가입을 해 주세요.',
   'auth.login.noAccount': '아직 회원이 아니신가요?',
@@ -106,8 +111,10 @@ export const ko: Record<MessageKey, string> = {
   'auth.bioPlaceholder': '자신을 짧게 소개해 주세요',
   'auth.bioCount': '{count}/{max}',
   'auth.bioInvalid': '{max}자 이내로 입력하세요.',
-  'auth.logout.confirm': '{name}(으)로 로그인되어 있습니다. 로그아웃할까요?',
-  'auth.logout.done': '로그아웃되었습니다.',
+  'auth.logout.confirm': '{name}(으)로 로그인되어 있습니다. 모든 서비스에서 로그아웃할까요?',
+  'auth.logout.confirmUnknown': '모든 서비스에서 로그아웃할까요?',
+  'auth.logout.signingOut': '모든 서비스에서 로그아웃하는 중…',
+  'auth.logout.done': '모든 서비스에서 로그아웃되었습니다.',
   'auth.logout.notSignedIn': '로그인되어 있지 않습니다.',
 
   'notFound.title': '페이지를 찾을 수 없습니다',

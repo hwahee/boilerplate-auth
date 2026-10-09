@@ -23,7 +23,14 @@ import type {
   SendChatMessageInput,
 } from '@shared/domain/chat';
 import type { CreateTodoInput, Todo, TodoListQuery, UpdateTodoInput } from '@shared/domain/todo';
-import type { LoginInput, SignUpInput, User } from '@shared/domain/user';
+import type {
+  LoginInput,
+  LoginResumption,
+  LogoutRequestInfo,
+  SignInResult,
+  SignUpInput,
+  User,
+} from '@shared/domain/user';
 
 import { ApiRequestError, apiFetch } from './http';
 
@@ -101,13 +108,15 @@ export const authApi = {
    * `POST /api/auth/sign-up`
    *
    * Registers a member — no password, by design — and signs them in.
-   * - Body:   `{ userId, displayName, bio? }` — id: 1–50 chars of `a-z`, `0-9`,
-   *           `_`, `-`; nickname: 1–30 chars, not blank; bio: up to 500 chars
-   *           (blank counts as left out).
+   * - Body:   `{ userId, displayName, bio?, loginChallenge? }` — id: 1–50 chars
+   *           of `a-z`, `0-9`, `_`, `-`; nickname: 1–30 chars, not blank; bio:
+   *           up to 500 chars (blank counts as left out); `loginChallenge` when a
+   *           service sent the visitor here.
    * - Errors: 400 `VALIDATION_ERROR`, 409 `CONFLICT` when the id is taken.
-   * - Returns 201 with the new `User` and sets the session cookie.
+   * - Returns 201 with `{ user, redirectTo }` and sets the session cookie;
+   *   `redirectTo` is where to send the browser to finish a service's sign-in.
    */
-  signUp(input: SignUpInput): Promise<User> {
+  signUp(input: SignUpInput): Promise<SignInResult> {
     return apiFetch('/api/auth/sign-up', { method: 'POST', body: input });
   },
 
@@ -116,12 +125,40 @@ export const authApi = {
    *
    * Signs in by a registered user id alone (development stage). Never
    * creates a member.
-   * - Body:   `{ userId: string }`.
-   * - Errors: 400 `VALIDATION_ERROR`, 404 `NOT_FOUND` when no member has that id.
-   * - Returns the signed-in `User` and sets the session cookie.
+   * - Body:   `{ userId, loginChallenge? }`.
+   * - Errors: 400 `VALIDATION_ERROR`, 404 `NOT_FOUND` when no member has that
+   *           id (or the service's sign-in request expired).
+   * - Returns `{ user, redirectTo }` and sets the session cookie.
    */
-  login(input: LoginInput): Promise<User> {
+  login(input: LoginInput): Promise<SignInResult> {
     return apiFetch('/api/auth/login', { method: 'POST', body: input });
+  },
+
+  /**
+   * `POST /api/auth/login/resume`
+   *
+   * A service sent the visitor to sign in (`login_challenge` on the page URL).
+   * - Body:   `{ loginChallenge }`.
+   * - Errors: 404 `NOT_FOUND` when the request expired or no Hydra is configured.
+   * - Returns `{ redirectTo }` when no page is needed (already signed in), else
+   *   `{ redirectTo: null, service }` — sign in on the page, for that service.
+   */
+  resumeLogin(loginChallenge: string): Promise<LoginResumption> {
+    return apiFetch('/api/auth/login/resume', { method: 'POST', body: { loginChallenge } });
+  },
+
+  /**
+   * `GET /api/auth/logout-request`
+   *
+   * Who a service's sign-out request (`logout_challenge`) is for.
+   * - Errors: 404 `NOT_FOUND` when the request expired or no Hydra is configured.
+   * - Returns `{ displayName, confirmed }` — `confirmed` when the member
+   *   already confirmed on this app's page, so it is not asked twice.
+   */
+  logoutRequest(logoutChallenge: string): Promise<LogoutRequestInfo> {
+    return apiFetch('/api/auth/logout-request', {
+      searchParams: { logout_challenge: logoutChallenge },
+    });
   },
 
   /**
@@ -142,11 +179,16 @@ export const authApi = {
   /**
    * `POST /api/auth/logout`
    *
-   * Signs out (clears the session cookie). Succeeds when already signed out.
-   * - Returns 204 (void).
+   * Signs out of this app (clears the session cookie); succeeds when already
+   * signed out. With a service's `logoutChallenge`, also ends the sign-in
+   * every service shares.
+   * - Returns 204 without a challenge, `{ redirectTo }` with one.
    */
-  logout(): Promise<void> {
-    return apiFetch('/api/auth/logout', { method: 'POST' });
+  logout(logoutChallenge?: string): Promise<{ redirectTo: string } | undefined> {
+    return apiFetch('/api/auth/logout', {
+      method: 'POST',
+      ...(logoutChallenge === undefined ? {} : { body: { logoutChallenge } }),
+    });
   },
 };
 
