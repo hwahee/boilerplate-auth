@@ -16,7 +16,6 @@
  * ./queries.ts), never call `fetch` directly.
  */
 import type { Page } from '@shared/api/pagination';
-import { appearanceParams, type Appearance } from '@shared/domain/appearance';
 import type {
   ChatHistory,
   ChatHistoryQuery,
@@ -25,7 +24,7 @@ import type {
 } from '@shared/domain/chat';
 import type { Sitemap } from '@shared/domain/sitemap';
 import type { CreateTodoInput, Todo, TodoListQuery, UpdateTodoInput } from '@shared/domain/todo';
-import type { User } from '@shared/domain/user';
+import type { DevLoginInput, User } from '@shared/domain/user';
 
 import { ApiRequestError, apiFetch } from './http';
 
@@ -92,35 +91,25 @@ export const todosApi = {
 };
 
 /**
- * Sign-in. Members sign in and out on the member server (CLAUDE.md): the
- * browser navigates there and back, so signing in and out are addresses to
- * go to, not calls. The session then travels as an httpOnly cookie the
- * browser sends on its own (same-origin) — no call here handles a token.
+ * Sign-in. The session travels as an httpOnly cookie the browser sends on its
+ * own (same-origin), so none of these calls handle a token.
  *
- * These endpoints exist only when the server runs with `AUTH_DRIVER=oidc`;
+ * These endpoints exist only when the server runs with `AUTH_DRIVER=dev`;
  * otherwise every one of them answers 404 `NOT_FOUND`.
  */
 export const authApi = {
   /**
-   * `GET /api/auth/login?returnTo=&theme=&design=&ui_locales=` — navigate here
-   * (full page) to sign in.
+   * `POST /api/auth/dev-login`
    *
-   * Goes to the member server's sign-in page, which looks the way
-   * `appearance` says (@shared/domain/appearance), and comes back to
-   * `returnTo` (a path on this site) signed in. A sign-in that cannot finish
-   * — turned down, expired, or used twice — lands on `/sign-in-failed` instead.
+   * Signs in by user id alone — no password (development only). The first
+   * sign-in with an id creates that user.
+   * - Body:   `{ userId: string }` — 1–50 chars of `a-z`, `0-9`, `_`, `-`.
+   * - Errors: 400 `VALIDATION_ERROR`.
+   * - Returns the signed-in `User` and sets the session cookie.
    */
-  signInUrl(returnTo: string, appearance: Appearance): string {
-    return `/api/auth/login?${new URLSearchParams({ returnTo, ...appearanceParams(appearance) })}`;
+  devLogin(input: DevLoginInput): Promise<User> {
+    return apiFetch('/api/auth/dev-login', { method: 'POST', body: input });
   },
-
-  /**
-   * `GET /api/auth/logout` — navigate here (full page) to sign out.
-   *
-   * The member server asks to confirm, signs the member out of every service,
-   * and ends on its own signed-out page.
-   */
-  signOutUrl: '/api/auth/logout',
 
   /**
    * `GET /api/auth/me`
@@ -135,6 +124,16 @@ export const authApi = {
       if (error instanceof ApiRequestError && error.code === 'UNAUTHORIZED') return null;
       throw error;
     }
+  },
+
+  /**
+   * `POST /api/auth/logout`
+   *
+   * Signs out (clears the session cookie). Succeeds when already signed out.
+   * - Returns 204 (void).
+   */
+  logout(): Promise<void> {
+    return apiFetch('/api/auth/logout', { method: 'POST' });
   },
 };
 

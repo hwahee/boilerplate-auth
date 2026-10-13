@@ -9,6 +9,7 @@
  */
 import type { ChatMessage, ChatRoom } from '@shared/domain/chat';
 import type { Todo, TodoListQuery } from '@shared/domain/todo';
+import type { User } from '@shared/domain/user';
 import type { UtcIsoString } from '@shared/time';
 
 /**
@@ -51,6 +52,11 @@ export interface TodoRepository {
   update(todo: Todo, session?: DbSession): Promise<void>;
   /** Returns `false` when no row matched. */
   deleteById(id: string, session?: DbSession): Promise<boolean>;
+}
+
+export interface UserRepository {
+  findById(id: string, session?: DbSession): Promise<User | null>;
+  insert(user: User, session?: DbSession): Promise<void>;
 }
 
 export interface ChatRoomRepository {

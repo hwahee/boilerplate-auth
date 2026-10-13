@@ -11,7 +11,6 @@
  * memory vs redis pub/sub), so swapping infrastructure is invisible to
  * services and routes.
  */
-import { createOidcClient, type OidcClient } from './auth/oidc';
 import type { ServerConfig } from './config';
 import { createPostgresDb, createPostgresUnitOfWork, type PostgresDb } from './db/postgres';
 import { createLogger, type Logger } from './lib/log';
@@ -24,6 +23,7 @@ import {
   createMemoryChatRoomRepository,
   createMemoryTodoRepository,
   createMemoryUnitOfWork,
+  createMemoryUserRepository,
   MemoryStore,
 } from './repositories/memory';
 import {
@@ -31,6 +31,7 @@ import {
   createPostgresChatMessageRepository,
   createPostgresChatRoomRepository,
   createPostgresTodoRepository,
+  createPostgresUserRepository,
 } from './repositories/postgres';
 import type {
   AuditLogRepository,
@@ -38,7 +39,9 @@ import type {
   ChatRoomRepository,
   TodoRepository,
   UnitOfWork,
+  UserRepository,
 } from './repositories/types';
+import { AuthService } from './services/auth-service';
 import { ChatService } from './services/chat-service';
 import { TodoService } from './services/todo-service';
 
@@ -46,8 +49,7 @@ export interface Container {
   readonly config: ServerConfig;
   readonly log: Logger;
   todoService(): TodoService;
-  /** Signs members in through the member server; only with AUTH_DRIVER=oidc. */
-  oidcClient(): OidcClient;
+  authService(): AuthService;
   chatService(): ChatService;
   /** This process's chat sockets — one per process, like everything here. */
   chatGateway(): ChatGateway;
@@ -97,6 +99,11 @@ export function createContainer(
       ? createPostgresTodoRepository(postgres())
       : createMemoryTodoRepository(memoryStore()),
   );
+  const userRepository = lazy<UserRepository>(() =>
+    config.dbDriver === 'postgres'
+      ? createPostgresUserRepository(postgres())
+      : createMemoryUserRepository(memoryStore()),
+  );
   const auditLogRepository = lazy<AuditLogRepository>(() =>
     config.dbDriver === 'postgres'
       ? createPostgresAuditLogRepository(postgres())
@@ -131,16 +138,21 @@ export function createContainer(
       }),
   );
 
-  const oidcClient = lazy<OidcClient>(() => {
-    if (!config.oidc) throw new Error('AUTH_DRIVER=oidc is not configured');
-    return createOidcClient(config.oidc);
-  });
+  const authService = lazy(
+    () =>
+      new AuthService({
+        users: userRepository(),
+        auditLogs: auditLogRepository(),
+        uow: unitOfWork(),
+      }),
+  );
 
   const chatService = lazy(
     () =>
       new ChatService({
         rooms: chatRoomRepository(),
         messages: chatMessageRepository(),
+        users: userRepository(),
         uow: unitOfWork(),
         events: pubsub(),
       }),
@@ -161,7 +173,7 @@ export function createContainer(
     config,
     log,
     todoService,
-    oidcClient,
+    authService,
     chatService,
     chatGateway,
     pubsub,

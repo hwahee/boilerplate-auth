@@ -20,6 +20,8 @@ export const TESTID = {
     designToggle: 'app.controls.design-toggle',
     localeSelect: 'app.controls.locale-select',
     account: {
+      form: 'app.account.form',
+      userIdInput: 'app.account.user-id',
       signIn: 'app.account.sign-in',
       user: 'app.account.user',
       signOut: 'app.account.sign-out',
@@ -93,11 +95,5 @@ export const TESTID = {
   notFound: {
     page: 'not-found.page',
     homeLink: 'not-found.home-link',
-  },
-  signInFailed: {
-    page: 'sign-in-failed.page',
-    message: 'sign-in-failed.message',
-    retry: 'sign-in-failed.retry',
-    homeLink: 'sign-in-failed.home-link',
   },
 } as const;
