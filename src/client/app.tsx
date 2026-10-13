@@ -14,7 +14,6 @@ import { LocaleProvider, useI18n } from './i18n/locale-context';
 import { DesignSystemPage } from './pages/design-system-page';
 import { HomePage } from './pages/home-page';
 import { NotFoundPage } from './pages/not-found-page';
-import { SignInFailedPage } from './pages/sign-in-failed-page';
 import { TESTID } from './testing/testids';
 import { nextDesign, ThemeProvider, useTheme, type Design } from './theme/theme-context';
 import { Button } from './ui/button';
@@ -108,7 +107,6 @@ function Shell() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/design-system" element={<DesignSystemPage />} />
-          <Route path="/sign-in-failed" element={<SignInFailedPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

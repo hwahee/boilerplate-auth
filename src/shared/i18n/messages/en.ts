@@ -87,13 +87,12 @@ export const en = {
   'designSystem.colorInput': 'Color input (palette)',
   'designSystem.overlays': 'Overlays (modal / sheet / sidebar)',
 
+  'auth.userId': 'User ID',
+  'auth.userIdPlaceholder': 'user id',
+  'auth.userIdInvalid': 'Use 1–50 lowercase letters, digits, _ or -.',
   'auth.signIn': 'Sign in',
   'auth.signOut': 'Sign out',
   'auth.signedInAs': 'Signed in as {name}',
-  'auth.signInFailed.title': 'Sign-in did not finish',
-  'auth.signInFailed.message':
-    'The sign-in was turned down, took too long, or was already used. You are not signed in — please try again.',
-  'auth.signInFailed.retry': 'Sign in again',
 
   'notFound.title': 'Page not found',
   'notFound.goHome': 'Go to home',

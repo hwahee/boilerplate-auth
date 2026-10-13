@@ -13,7 +13,7 @@ src/
 │   └── domain/      # 도메인 타입 + 검증기 (서버·클라이언트 공용 계약)
 ├── server/          # Bun server (API + 클라이언트 서빙 + 워커)
 │   ├── http/        # 라우트 공통 미들웨어 (CORS, 버전, 에러 매핑, locale)
-│   ├── auth/        # 요청 신원(서명된 세션 쿠키) + 회원 서버 로그인(OIDC 표준만)
+│   ├── auth/        # 요청 신원 — AUTH_DRIVER별로 "누가 호출했나"를 읽는 유일한 자리
 │   ├── routes/      # 엔드포인트 정의
 │   ├── services/    # 비즈니스 로직 (트랜잭션 경계가 여기서 드러남)
 │   ├── repositories/# 영속성 계약 + postgres/in-memory 구현
@@ -30,7 +30,7 @@ src/
     ├── styles/      # 디자인 토큰 (라이트/다크 × 디자인 A/B)
     ├── theme/ i18n/ # 테마·로케일 컨텍스트
     ├── testing/     # data-testid 레지스트리 (docs/ui-automation.md 참고)
-    └── pages/       # Home(Todos + 채팅), Design System, 로그인 실패, NotFound
+    └── pages/       # Home(Todos + 채팅), Design System, NotFound
 ```
 
 ## 요구 사항
@@ -57,10 +57,6 @@ cp .env.example .env      # 환경 설정 — 비밀값은 절대 커밋 금지
 bun run db:setup          # docker로 Postgres 기동 + 마이그레이션 + 시드 (한 번에)
 bun run dev               # 개발 서버 (서버 watch + 클라이언트 HMR) → http://localhost:3000
 ```
-
-로그인은 회원 서버([hwahee/boilerplate-auth](https://github.com/hwahee/boilerplate-auth))가 맡으므로
-로컬에서도 회원 서버를 함께 띄웁니다(그 저장소 README의 "시작하기": `db:setup` → `hydra:up` →
-`services:register` → `dev`). 회원 서버 없이 띄우려면 `.env`에서 `AUTH_DRIVER=none`으로 바꿉니다.
 
 DB 없이 바로 실행하려면 `.env`에서 `DB_DRIVER=memory`로 바꾸면 됩니다(테스트도 이 드라이버를 사용).
 다른 프로젝트의 Postgres와 함께 띄우려면 `.env`의 `POSTGRES_PORT`와 `DATABASE_URL`의 포트를 같이 바꿉니다
@@ -161,34 +157,20 @@ SIGTERM/SIGINT 수신 시: ① readiness가 즉시 503으로 바뀌어 LB가 트
 
 ### 인증 (회원)
 
-확정된 전제는 [CLAUDE.md](CLAUDE.md)에 있습니다: 비밀번호를 다루지 않고, 회원 가입·로그인·로그아웃은
-회원 서버([hwahee/boilerplate-auth](https://github.com/hwahee/boilerplate-auth))가 맡으며, 브라우저에는
-토큰을 두지 않습니다.
+확정된 전제는 [CLAUDE.md](CLAUDE.md)에 있습니다: 비밀번호를 다루지 않고, 개발 단계는 아이디만으로
+로그인하며, 실제 인증은 나중에 구글 같은 외부 로그인에 위임합니다.
 
-- **드라이버**: `AUTH_DRIVER=none|oidc` (미설정 시 `none`, `.env.example`은 `oidc`).
+- **드라이버 교체**: `AUTH_DRIVER=none|dev` (미설정 시 `none`, `.env.example`은 `dev`).
   - `none` — 로그인 없음. `/api/auth/*`가 마운트되지 않아 JSON 404이고, 헤더 컨트롤도 숨겨집니다.
-  - `oidc` — 회원 서버에서 OpenID Connect로 로그인합니다. 이 서비스는 표준(OIDC)에만 의존하고
-    (`src/server/auth/oidc.ts`), 회원 서버가 무엇으로 돌아가는지 모릅니다. `OIDC_*`·`PUBLIC_URL`은
-    회원 서버에 등록한 이 서비스의 값과 같아야 합니다(`.env.example`).
-- **로그인**: 헤더의 "로그인" → `GET /api/auth/login?returnTo=` → 회원 서버의 로그인 페이지 →
-  `GET /api/auth/callback`에서 코드를 회원 정보로 바꾸고 → 시작한 페이지로 돌아옵니다. 다른 서비스에
-  이미 로그인해 있으면 회원 서버 페이지는 입력 없이 지나갑니다. 끝내지 못한 로그인(거절·만료·재사용)은
-  `/sign-in-failed`로 옵니다.
-- **로그아웃**: 헤더의 "로그아웃" → `GET /api/auth/logout` → 회원 서버의 확인 페이지. 확인하면 회원
-  서버가 모든 서비스의 `GET /api/auth/frontchannel-logout`을 불러 각자의 세션을 끝내고, 회원 서버의
-  로그아웃 완료 페이지에서 끝납니다.
-- **세션 쿠키**: `session-{OIDC_CLIENT_ID}`에 회원 아이디·닉네임(OIDC `sub`·`name`)과 회원 서버 세션
-  id만 담고 `SESSION_SECRET`으로 서명합니다. 토큰은 담지 않습니다. httpOnly + `SameSite=Lax`이고,
-  `PUBLIC_URL`이 https면 `Secure`입니다. 브라우저를 닫으면 사라집니다. 쿠키 이름에 서비스 id가 붙는
-  것은 localhost에서 포트가 달라도 쿠키를 함께 쓰기 때문입니다. CORS에서
-  `Access-Control-Allow-Credentials`를 켜지 않으므로 교차 출처 호출자에게는 쿠키가 가지 않습니다.
-- **회원 정보**: 이 서비스는 회원 테이블을 두지 않습니다(`0004_drop_users`). 회원은 로그인할 때
-  회원 서버가 알려 준 아이디와 닉네임으로만 압니다.
-- **API**: `GET /api/auth/me` → `User({id, displayName}) | 401`. 로그인·로그아웃은 주소로 이동합니다
-  (`authApi.signInUrl(returnTo)`, `authApi.signOutUrl` — `src/client/api/endpoints.ts`).
-- **신원 전달**: 라우트는 `ctx.caller`(`src/server/http/context.ts`)만 읽습니다 — `member`(로그인,
-  아이디·닉네임), `guest`(로그인 기능은 있지만 로그인 안 함), `anyone`(`none` — 구분 없음).
-  클라이언트의 `useCaller()`가 같은 셋(+ 로딩 중 `unknown`)을 돌려줍니다.
+  - `dev` — 아이디만으로 로그인. **처음 로그인한 아이디가 곧 가입**입니다(`users` 행 + 감사 로그).
+    아이디를 알면 누구나 그 계정으로 들어가므로 `APP_ENV=production`에서는 부팅을 거부합니다.
+  - 외부 로그인은 드라이버 하나를 더하는 것으로 붙입니다 — 쿠키에 무엇을 담고 어떻게 검증하는지는
+    `src/server/auth/session.ts` 한 곳에만 있습니다.
+- **API**: `POST /api/auth/dev-login {userId}` → `User` + 세션 쿠키, `GET /api/auth/me` →
+  `User | 401`, `POST /api/auth/logout` → 204. 상세는 `src/client/api/endpoints.ts`의 `authApi`.
+- **신원 전달**: 라우트는 `ctx.caller`(`src/server/http/context.ts`)만 읽습니다 — `member`(로그인),
+  `guest`(로그인 기능은 있지만 로그인 안 함), `anyone`(`none` — 구분 없음). 클라이언트의
+  `useCaller()`가 같은 셋(+ 로딩 중 `unknown`)을 돌려줍니다.
 - **게스트가 할 수 있는 일**: **접속을 끊은 뒤에도 의미가 남는 행동은 회원만**, 접속해 있는 동안에만
   의미가 있는 행동(예: 게임 한 판의 점수)은 게스트도 합니다. 조회는 게스트에게도 열려 있습니다.
   회원 전용 행동은 핸들러 첫 줄의 `requireMember(ctx.caller)`로 선언하며, 게스트면 로컬라이즈된
@@ -196,8 +178,11 @@ SIGTERM/SIGINT 수신 시: ① readiness가 즉시 503으로 바뀌어 LB가 트
   화면도 게스트에게는 쓰기 UI 대신 안내를 보여 줍니다. 게스트 상태는 서버가 아닌 탭 안에 두므로
   게스트 식별자는 없습니다. **예외는 채팅**입니다: 게스트도 메시지를 보내고, 탭이 만든 `guestId`로
   표시됩니다(서버는 이를 신원 증명으로 쓰지 않음).
-- **아직 없는 것**: todos와 회원의 연결(소유자 — 지금은 회원 모두가 한 목록을 함께 씀), 감사 로그의
-  행위자, 다른 서비스가 회원 정보를 묻는 API, 외부 로그인(회원 서버 쪽).
+- **쿠키**: httpOnly(페이지 스크립트가 못 읽음) + `SameSite=Lax`, **same-origin 전제**입니다. CORS에서
+  `Access-Control-Allow-Credentials`를 켜지 않으므로 `CORS_ORIGINS`의 교차 출처 호출자에게는
+  쿠키가 전달되지 않습니다.
+- **아직 없는 것**: todos와 사용자의 연결(소유자 — 지금은 회원 모두가 한 목록을 함께 씀), 감사
+  로그의 행위자, 서명된 쿠키, 외부 로그인.
 
 ### 채팅
 
@@ -302,15 +287,13 @@ SIGTERM/SIGINT 수신 시: ① readiness가 즉시 503으로 바뀌어 LB가 트
 
 ## 테스트 전략
 
-- **단위**: 비즈니스 로직(`TodoService`, `ChatService` — 방별 번호, 지난 채팅의 개수·나이·
+- **단위**: 비즈니스 로직(`TodoService`, `AuthService`, `ChatService` — 방별 번호, 지난 채팅의 개수·나이·
   보존 기한, 보존 기한 정리) — 트랜잭션 롤백, 이벤트 발행,
-  성공/실패 케이스. 설정 가드(`AUTH_DRIVER=oidc`의 필수 값), 서명된 세션 쿠키 해석, OIDC 클라이언트
-  (가짜 발급자 `src/server/auth/fake-issuer.ts` 상대로: 코드 교환, 클레임 확인, 재사용 거절)도 단위로 검증합니다.
+  성공/실패 케이스. 설정 가드(`AUTH_DRIVER=dev` × 운영)와 세션 쿠키 해석도 단위로 검증합니다.
   라우트가 아직 던지지 않는 도메인 에러의 HTTP 매핑(401)은 `respond.test.ts`에서 검증합니다.
 - **통합**: 실제 앱을 임시 포트에 띄워 HTTP로 검증 — CRUD, 페이지네이션/정렬/필터,
   검증 실패(400)와 로컬라이즈된 메시지, 404(없는 API 경로·메서드 포함), 버전 스큐(409),
-  CORS 허용/거부, 헬스체크, 로그인(가짜 발급자를 거쳐 콜백 → `me` 200, 끝내지 못한 로그인은
-  `/sign-in-failed`), 로그아웃(front-channel이 지목한 세션만 종료), 게스트의 todos 쓰기 401
+  CORS 허용/거부, 헬스체크, 로그인 → `me` 200 → 로그아웃 → `me` 401, 게스트의 todos 쓰기 401
   (`none`에서는 허용).
 - **채팅**: HTTP(전송·지난 채팅·`after`)와 실제 WebSocket(가입, 실시간 수신, 접속자 목록과 중복 제거,
   퇴장, 없는 방)을 통합으로, 게이트웨이의 접속자 순서(목록과 경합한 변화)와 만료 정리를 대역 소켓으로,

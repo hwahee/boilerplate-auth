@@ -28,7 +28,7 @@ export function chatMessageRoutes(container: Container, deps: HttpDeps) {
       POST: async (req, ctx) => {
         const input = sendChatMessageValidator.parse(await req.json());
         const chat = container.chatService();
-        const author = chat.participantFor(ctx.caller, input.guestId);
+        const author = await chat.participantFor(ctx.caller, input.guestId);
         const message = await chat.send(req.params.roomId, author, input.text);
         return json(message, { status: 201 });
       },

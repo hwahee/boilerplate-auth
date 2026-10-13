@@ -185,8 +185,20 @@ a {
 /* Sign-in controls inside .app-controls (src/client/auth/account-controls.tsx). */
 .account-controls {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
+}
+
+.account-controls .field {
+  position: relative;
+  width: 10rem;
+}
+
+/* Overlays below the input so an error never shifts the header row. */
+.account-controls .field__error {
+  position: absolute;
+  top: 100%;
+  white-space: nowrap;
 }
 
 .account-controls__user {
@@ -199,18 +211,6 @@ a {
 
 .app-main {
   padding-top: var(--space-5);
-}
-
-/* /sign-in-failed: one narrow column. */
-.sign-in-failed {
-  max-width: 28rem;
-}
-
-.sign-in-failed__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-block: var(--space-4);
 }
 
 /* ── Button ───────────────────────────────────────────────────────────────── */

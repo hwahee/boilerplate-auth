@@ -83,13 +83,12 @@ export const ko: Record<MessageKey, string> = {
   'designSystem.colorInput': '색상 입력 (팔레트)',
   'designSystem.overlays': '오버레이 (모달 / 시트 / 사이드바)',
 
+  'auth.userId': '아이디',
+  'auth.userIdPlaceholder': '아이디',
+  'auth.userIdInvalid': '영문 소문자, 숫자, _, -로 1–50자를 입력하세요.',
   'auth.signIn': '로그인',
   'auth.signOut': '로그아웃',
   'auth.signedInAs': '{name}(으)로 로그인됨',
-  'auth.signInFailed.title': '로그인을 마치지 못했습니다',
-  'auth.signInFailed.message':
-    '로그인이 거절되었거나, 시간이 너무 지났거나, 이미 사용된 요청입니다. 로그인되지 않았으니 다시 시도해 주세요.',
-  'auth.signInFailed.retry': '다시 로그인',
 
   'notFound.title': '페이지를 찾을 수 없습니다',
   'notFound.goHome': '홈으로 이동',

@@ -35,7 +35,7 @@ export function buildApp(container: Container, state: AppState) {
       '/api/todos': todoCollectionRoutes(container, deps),
       '/api/todos/:id': todoItemRoutes(container, deps),
       '/api/chat/rooms/:roomId/messages': chatMessageRoutes(container, deps),
-      ...(container.config.authDriver === 'oidc' ? authRoutes(container, deps) : {}),
+      ...(container.config.authDriver === 'dev' ? authRoutes(container, deps) : {}),
       /** Unknown API paths/methods → JSON 404, never the SPA's index.html. */
       '/api/*': apiFallbackRoutes(deps),
       /** WebSocket endpoint: pushes `{action, todoId}` on every todo change. */

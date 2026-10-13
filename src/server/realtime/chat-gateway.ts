@@ -201,7 +201,7 @@ export class ChatGateway {
       this.send(ws, { type: 'error', roomId, code: 'NOT_FOUND' });
       return;
     }
-    const participant = (ws.data.participant ??= this.deps.chat.participantFor(
+    const participant = (ws.data.participant ??= await this.deps.chat.participantFor(
       ws.data.caller,
       ws.data.guestId,
     ));

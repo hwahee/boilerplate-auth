@@ -11,6 +11,7 @@ import {
   createMemoryChatMessageRepository,
   createMemoryChatRoomRepository,
   createMemoryUnitOfWork,
+  createMemoryUserRepository,
   MemoryStore,
 } from '../repositories/memory';
 import type { ChatMessageRepository } from '../repositories/types';
@@ -28,6 +29,7 @@ function makeService(overrides: { messages?: ChatMessageRepository } = {}): Chat
   return new ChatService({
     rooms: createMemoryChatRoomRepository(store),
     messages: overrides.messages ?? createMemoryChatMessageRepository(store),
+    users: createMemoryUserRepository(store),
     uow: createMemoryUnitOfWork(store),
     events,
   });
@@ -198,22 +200,35 @@ describe('ChatService.purgeExpired', () => {
 });
 
 describe('ChatService.participantFor', () => {
-  test('a member speaks under the nickname they signed in with', () => {
-    const participant = makeService().participantFor(
-      { kind: 'member', userId: 'alice', displayName: 'Alice' },
+  test('a member speaks under their display name', async () => {
+    store.users.set('alice', {
+      id: 'alice',
+      displayName: 'Alice',
+      createdAt: toUtcIso(new Date()),
+    });
+    const participant = await makeService().participantFor(
+      { kind: 'member', userId: 'alice' },
       'ffffff',
     );
     expect(participant).toEqual(ALICE);
   });
 
-  test('a guest — or anyone, without sign-in — is their tab guest id', () => {
-    const chat = makeService();
-    expect(chat.participantFor({ kind: 'guest' }, 'a1b2c3')).toEqual(GUEST);
-    expect(chat.participantFor({ kind: 'anyone' }, 'a1b2c3')).toEqual(GUEST);
+  test('a member with no user row (dev driver) falls back to the id', async () => {
+    const participant = await makeService().participantFor(
+      { kind: 'member', userId: 'ghost' },
+      undefined,
+    );
+    expect(participant).toEqual({ kind: 'member', userId: 'ghost', displayName: 'ghost' });
   });
 
-  test('a guest without a guest id is a validation error', () => {
-    expect(() => makeService().participantFor({ kind: 'guest' }, undefined)).toThrow(
+  test('a guest — or anyone, without sign-in — is their tab guest id', async () => {
+    const chat = makeService();
+    expect(await chat.participantFor({ kind: 'guest' }, 'a1b2c3')).toEqual(GUEST);
+    expect(await chat.participantFor({ kind: 'anyone' }, 'a1b2c3')).toEqual(GUEST);
+  });
+
+  test('a guest without a guest id is a validation error', async () => {
+    await expect(makeService().participantFor({ kind: 'guest' }, undefined)).rejects.toBeInstanceOf(
       ValidationError,
     );
   });

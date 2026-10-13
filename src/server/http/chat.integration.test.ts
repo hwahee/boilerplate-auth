@@ -16,7 +16,6 @@ import {
 } from '@shared/domain/chat';
 
 import { buildApp, type SocketData } from '../app';
-import { memberCookie as signedInCookie, testOidcEnv } from '../auth/fake-issuer';
 import { loadServerConfig } from '../config';
 import { createContainer, type Container } from '../container';
 import { silentLogger } from '../lib/log';
@@ -37,13 +36,14 @@ beforeAll(async () => {
     APP_ENV: 'local',
     DB_DRIVER: 'memory',
     PUBSUB_DRIVER: 'memory',
-    ...testOidcEnv(),
+    AUTH_DRIVER: 'dev',
   });
   container = createContainer(config, { log: silentLogger });
   server = Bun.serve({ port: 0, ...buildApp(container, { shuttingDown: false }) });
   stopChat = await container.chatGateway().start();
   baseUrl = String(server.url).replace(/\/$/, '');
-  memberCookie = signedInCookie(config, { userId: 'alice', displayName: 'Alice' });
+  const login = await api('POST', '/api/auth/dev-login', { body: { userId: 'alice' } });
+  memberCookie = (login.headers.get('set-cookie') ?? '').split(';')[0] ?? '';
 });
 
 afterAll(async () => {
@@ -206,7 +206,7 @@ describe('chat over HTTP', () => {
       cookie: memberCookie,
     });
     expect(status).toBe(201);
-    expect(body.author).toEqual({ kind: 'member', userId: 'alice', displayName: 'Alice' });
+    expect(body.author).toEqual({ kind: 'member', userId: 'alice', displayName: 'alice' });
   });
 
   test('a guest without a guest id, or a blank text, is 400', async () => {
@@ -298,7 +298,7 @@ describe('chat over /ws/chat', () => {
     await tab2.join();
     const everyone = await guest.presence(2);
     expect(everyone).toContainEqual({ kind: 'guest', guestId: GUEST_ID });
-    expect(everyone).toContainEqual({ kind: 'member', userId: 'alice', displayName: 'Alice' });
+    expect(everyone).toContainEqual({ kind: 'member', userId: 'alice', displayName: 'alice' });
     // A late joiner learns who was already there from its snapshot.
     expect(await tab2.presence(2)).toHaveLength(2);
 
