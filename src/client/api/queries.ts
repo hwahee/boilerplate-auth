@@ -8,7 +8,13 @@
 import type { Page } from '@shared/api/pagination';
 import type { Todo, TodoStatus } from '@shared/domain/todo';
 import type { SignInResult, SignUpInput, User } from '@shared/domain/user';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import { authApi, todosApi, type TodoListQueryInput } from './endpoints';
@@ -20,7 +26,7 @@ const todoKeys = {
   list: (query: TodoListQueryInput) => [...todoKeys.lists(), query] as const,
 };
 
-const authKeys = {
+export const authKeys = {
   me: ['auth', 'me'] as const,
 };
 
@@ -48,6 +54,17 @@ export function useCaller(): 'member' | 'guest' | 'anyone' | 'unknown' {
 }
 
 /**
+ * Puts who is signed in now into the cache after signing in or out. A `me`
+ * fetch still in flight went out with the old cookie and would overwrite this
+ * when it lands — /logged-out loads `me` and signs out at the same moment —
+ * so it is cancelled first.
+ */
+export async function replaceMe(queryClient: QueryClient, user: User | null) {
+  await queryClient.cancelQueries({ queryKey: authKeys.me });
+  queryClient.setQueryData<User | null>(authKeys.me, user);
+}
+
+/**
  * Where a finished sign-in goes: back to the service that asked (a full page
  * load — it is another site), or nowhere when the visitor came on their own.
  */
@@ -60,8 +77,8 @@ export function useSignUp() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: SignUpInput) => authApi.signUp(input),
-    onSuccess: (result) => {
-      queryClient.setQueryData<User | null>(authKeys.me, result.user);
+    onSuccess: async (result) => {
+      await replaceMe(queryClient, result.user);
       followSignIn(result);
     },
   });
@@ -72,8 +89,8 @@ export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: { userId: string; loginChallenge?: string }) => authApi.login(input),
-    onSuccess: (result) => {
-      queryClient.setQueryData<User | null>(authKeys.me, result.user);
+    onSuccess: async (result) => {
+      await replaceMe(queryClient, result.user);
       followSignIn(result);
     },
   });
@@ -110,8 +127,8 @@ export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (logoutChallenge?: string) => authApi.logout(logoutChallenge),
-    onSuccess: (result) => {
-      queryClient.setQueryData<User | null>(authKeys.me, null);
+    onSuccess: async (result) => {
+      await replaceMe(queryClient, null);
       if (result) window.location.assign(result.redirectTo);
     },
   });
