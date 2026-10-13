@@ -43,6 +43,10 @@
 - `boilerplate` main이 바뀌면 **이 저장소의 main도 그 위로 리베이스해서 강제 푸시**하고, 열린 PR
   브랜치도 그 main 위로 리베이스해서 강제 푸시합니다. main은 항상 "최신 `boilerplate` main + 이
   저장소의 커밋"입니다(이 저장소의 PR 머지 커밋은 리베이스하며 사라집니다).
+- 이 저장소는 로그인을 **주는** 쪽이라 `boilerplate`의 서비스 쪽 로그인(OIDC 클라이언트, 회원 테이블 제거 —
+  [2026-10 업그레이드 가이드](docs/upgrade-guides/2026-10-oidc-sign-in.md) 6절)은 받지 않습니다. 리베이스할 때
+  `chore: the member server keeps its own sign-in` 커밋을 `boilerplate` main 바로 위에 두고, 그 커밋의 충돌은
+  회원 서버 쪽을 택합니다.
 - 디자인 시스템처럼 보일러플레이트에 속하는 변경은 **`boilerplate`에 먼저** 넣고, 위 방식으로
   받아옵니다. 이 저장소에서 먼저 만들지 않습니다.
 
