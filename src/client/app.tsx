@@ -4,15 +4,14 @@
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Moon, Palette, Sun } from 'lucide-react';
-import { BrowserRouter, NavLink, Route, Routes } from 'react-router';
+import { BrowserRouter, Route, Routes } from 'react-router';
 
 import { SUPPORTED_LOCALES, type Locale } from '@shared/i18n';
 
 import { isRetryableError } from './api/http';
 import { AccountControls } from './auth/account-controls';
 import { LocaleProvider, useI18n } from './i18n/locale-context';
-import { DesignSystemPage } from './pages/design-system-page';
-import { HomePage } from './pages/home-page';
+import { AccountPage } from './pages/account-page';
 import { LoggedOutPage } from './pages/logged-out-page';
 import { LoginPage } from './pages/login-page';
 import { LogoutPage } from './pages/logout-page';
@@ -57,16 +56,6 @@ function Header() {
         <p className="app-header__tagline muted">{t('app.tagline')}</p>
       </div>
 
-      <nav className="app-nav" aria-label={t('app.title')}>
-        {/* NavLink sets aria-current="page" on the active route automatically. */}
-        <NavLink to="/" end data-testid={TESTID.app.navTodos}>
-          {t('nav.todos')}
-        </NavLink>
-        <NavLink to="/design-system" data-testid={TESTID.app.navDesignSystem}>
-          {t('nav.designSystem')}
-        </NavLink>
-      </nav>
-
       <div className="app-controls">
         <Button
           variant="ghost"
@@ -109,8 +98,7 @@ function Shell() {
       <Header />
       <main id="main" className="app-main">
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/design-system" element={<DesignSystemPage />} />
+          <Route path="/" element={<AccountPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/sign-up" element={<SignUpPage />} />
           <Route path="/logout" element={<LogoutPage />} />

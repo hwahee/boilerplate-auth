@@ -62,6 +62,14 @@ export const TESTID = {
     homeLink: 'logged-out.home-link',
     loginLink: 'logged-out.login-link',
   },
+  account: {
+    page: 'account.page',
+    disabled: 'account.disabled',
+    signIn: 'account.sign-in',
+    signUp: 'account.sign-up',
+    user: 'account.user',
+    signOut: 'account.sign-out',
+  },
   todos: {
     page: 'todos.page',
     createForm: 'todos.create.form',
