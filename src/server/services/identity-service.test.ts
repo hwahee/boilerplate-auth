@@ -55,10 +55,22 @@ describe('IdentityService — login', () => {
     expect(await service.resumeLogin(challenge)).toEqual({
       redirectTo: null,
       service: { id: 'todo-app', name: 'Todo App' },
+      appearance: {},
     });
     // A session naming a member that no longer exists doesn't count.
     expect((await service.resumeLogin(challenge, 'ghost')).redirectTo).toBeNull();
     expect(hydra.answers.has(challenge)).toBe(false);
+  });
+
+  test('the page looks the way the service asked on its authorization request', async () => {
+    const challenge = hydra.startLogin({
+      requestUrl: 'http://hydra.test/oauth2/auth?client_id=todo-app&theme=dark&ui_locales=ko',
+    });
+    const resumption = await service.resumeLogin(challenge);
+    expect(resumption.redirectTo === null && resumption.appearance).toEqual({
+      theme: 'dark',
+      locale: 'ko',
+    });
   });
 
   test('signing in on the page answers the request and joins the service once', async () => {
@@ -89,7 +101,11 @@ describe('IdentityService — consent and logout', () => {
 
   test('the logout request names who is signing out, and whether it was confirmed here', async () => {
     const asked = hydra.startLogout({ subject: 'alice' });
-    expect(await service.logoutRequest(asked)).toEqual({ displayName: 'Alice', confirmed: false });
+    expect(await service.logoutRequest(asked)).toEqual({
+      displayName: 'Alice',
+      confirmed: false,
+      appearance: {},
+    });
 
     const confirmed = hydra.startLogout({
       subject: 'alice',
@@ -98,7 +114,20 @@ describe('IdentityService — consent and logout', () => {
     expect((await service.logoutRequest(confirmed)).confirmed).toBe(true);
 
     const unknown = hydra.startLogout({ subject: null });
-    expect(await service.logoutRequest(unknown)).toEqual({ displayName: null, confirmed: false });
+    expect(await service.logoutRequest(unknown)).toEqual({
+      displayName: null,
+      confirmed: false,
+      appearance: {},
+    });
+
+    const styled = hydra.startLogout({
+      subject: 'alice',
+      requestUrl: '/oauth2/sessions/logout?design=office&ui_locales=en',
+    });
+    expect((await service.logoutRequest(styled)).appearance).toEqual({
+      design: 'office',
+      locale: 'en',
+    });
   });
 
   test('without Hydra the flows are 404 and a confirmed sign-out ends on /logged-out', async () => {

@@ -2,7 +2,9 @@
  * Client binding of the shared i18n facade (@shared/i18n).
  * Keeps `<html lang>` in sync so assistive tech announces the right language,
  * and persists the choice. `useI18n().t` is the only way UI code gets text.
+ * A service picks the locale with `ui_locales` (@shared/domain/appearance).
  */
+import { appearanceFromParams } from '@shared/domain/appearance';
 import {
   DEFAULT_LOCALE,
   isLocale,
@@ -24,6 +26,8 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 const LOCALE_KEY = 'app.locale';
 
 function initialLocale(): Locale {
+  const requested = appearanceFromParams(new URLSearchParams(window.location.search)).locale;
+  if (requested) return requested;
   const stored = localStorage.getItem(LOCALE_KEY);
   if (isLocale(stored)) return stored;
   const browser = navigator.language.split('-')[0];

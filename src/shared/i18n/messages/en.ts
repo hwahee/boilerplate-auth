@@ -96,6 +96,8 @@ export const en = {
   'auth.signUp': 'Sign up',
   'auth.disabled': 'Sign-in is turned off on this server (AUTH_DRIVER=none).',
   'auth.goHome': 'Go to home',
+  'auth.account.title': 'Account',
+  'auth.account.guest': 'Sign in with your id, or sign up first.',
   'auth.requestExpired':
     'This sign-in request has expired or was already used. Go back to the service and try again.',
   'auth.returning': 'Taking you back…',

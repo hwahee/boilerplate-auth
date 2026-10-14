@@ -11,7 +11,12 @@ export const FAKE_HYDRA_URL = 'http://hydra.test';
 
 interface FakeHydra extends HydraClient {
   /** A service sent someone to sign in; `rememberedAs` = Hydra already knows them. */
-  startLogin(options?: { clientId?: string; clientName?: string; rememberedAs?: string }): string;
+  startLogin(options?: {
+    clientId?: string;
+    clientName?: string;
+    rememberedAs?: string;
+    requestUrl?: string;
+  }): string;
   /** Hydra asks whether `subject` may be shared with the service. */
   startConsent(subject: string, requestedScope?: string[]): string;
   /** Someone started signing out; `requestUrl` is the logout URL as requested. */
@@ -49,13 +54,19 @@ export function createFakeHydra(): FakeHydra {
   return {
     answers,
 
-    startLogin({ clientId = 'todo-app', clientName = 'Todo App', rememberedAs } = {}) {
+    startLogin({
+      clientId = 'todo-app',
+      clientName = 'Todo App',
+      rememberedAs,
+      requestUrl = `${FAKE_HYDRA_URL}/oauth2/auth`,
+    } = {}) {
       const challenge = `login-${++next}`;
       logins.set(challenge, {
         skip: rememberedAs !== undefined,
         subject: rememberedAs ?? '',
         clientId,
         clientName,
+        requestUrl,
       });
       return challenge;
     },

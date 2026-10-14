@@ -92,6 +92,8 @@ export const ko: Record<MessageKey, string> = {
   'auth.signUp': '회원가입',
   'auth.disabled': '이 서버는 로그인 기능이 꺼져 있습니다 (AUTH_DRIVER=none).',
   'auth.goHome': '홈으로 이동',
+  'auth.account.title': '계정',
+  'auth.account.guest': '아이디로 로그인하거나, 먼저 회원가입하세요.',
   'auth.requestExpired':
     '로그인 요청이 만료되었거나 이미 처리되었습니다. 서비스로 돌아가 다시 시도해 주세요.',
   'auth.returning': '서비스로 돌아가는 중…',

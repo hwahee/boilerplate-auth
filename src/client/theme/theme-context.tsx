@@ -9,26 +9,23 @@
  *       Office = 2000s MS Office (dense, beveled controls, no motion)
  *       Kids  = playground/toy vibe (chunky, rounded, exaggerated motion)
  *
- * Both persist to localStorage. The initial theme derives from the OS
- * preference — computed once, not stored as extra state.
+ * Neither has a switch on the member server's pages: the service that sends
+ * a visitor here picks them (@shared/domain/appearance) — on the page URL,
+ * read once here, or on its Hydra request, applied by useApplyAppearance.
+ * Both persist to localStorage for a visit that names none; without either,
+ * the theme derives from the OS preference.
  */
+import { appearanceFromParams } from '@shared/domain/appearance';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 export type Theme = 'light' | 'dark';
 export type Design = 'a' | 'b' | 'office' | 'kids';
 
-/** The design a toggle click moves to next — cycles A → B → Office → Kids → A. */
-const NEXT_DESIGN: Record<Design, Design> = { a: 'b', b: 'office', office: 'kids', kids: 'a' };
-
-export function nextDesign(current: Design): Design {
-  return NEXT_DESIGN[current];
-}
-
 interface ThemeContextValue {
   theme: Theme;
   design: Design;
-  toggleTheme: () => void;
-  toggleDesign: () => void;
+  setTheme: (theme: Theme) => void;
+  setDesign: (design: Design) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -36,13 +33,18 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 const THEME_KEY = 'app.theme';
 const DESIGN_KEY = 'app.design';
 
+/** What the page URL asks for, read once on load. */
+const requested = appearanceFromParams(new URLSearchParams(window.location.search));
+
 function initialTheme(): Theme {
+  if (requested.theme) return requested.theme;
   const stored = localStorage.getItem(THEME_KEY);
   if (stored === 'light' || stored === 'dark') return stored;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 function initialDesign(): Design {
+  if (requested.design) return requested.design;
   const stored = localStorage.getItem(DESIGN_KEY);
   return stored === 'b' || stored === 'office' || stored === 'kids' ? stored : 'a';
 }
@@ -62,14 +64,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [design]);
 
   return (
-    <ThemeContext.Provider
-      value={{
-        theme,
-        design,
-        toggleTheme: () => setTheme((t) => (t === 'light' ? 'dark' : 'light')),
-        toggleDesign: () => setDesign(nextDesign),
-      }}
-    >
+    <ThemeContext.Provider value={{ theme, design, setTheme, setDesign }}>
       {children}
     </ThemeContext.Provider>
   );
