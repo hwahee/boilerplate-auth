@@ -15,6 +15,7 @@ import { Link } from 'react-router';
 
 import { ApiRequestError } from '../api/http';
 import { useCaller, useLogout, useLogoutRequest, useMe } from '../api/queries';
+import { AuthCard, MemberIdentity } from '../auth/auth-card';
 import { FlowStatus, isExpiredRequest, useChallenge } from '../auth/flow-status';
 import { useI18n } from '../i18n/locale-context';
 import { TESTID } from '../testing/testids';
@@ -45,8 +46,13 @@ export function LogoutPage() {
     signOut(logoutChallenge);
   }, [logoutChallenge, confirmed, signOut]);
 
-  const confirmText = (name: string | null | undefined) =>
-    name ? t('auth.logout.confirm', { name }) : t('auth.logout.confirmUnknown');
+  // Who is signing out, and the question — the same either way in.
+  const confirmation = (name: string | null | undefined, userId?: string) => (
+    <>
+      {name && <MemberIdentity name={name} {...(userId === undefined ? {} : { userId })} />}
+      <p className="auth-page__question">{t('auth.logout.confirm')}</p>
+    </>
+  );
 
   let body: ReactNode;
   if (caller === 'anyone') {
@@ -63,7 +69,7 @@ export function LogoutPage() {
     } else if (request.data) {
       body = (
         <>
-          <p>{confirmText(request.data.displayName)}</p>
+          {confirmation(request.data.displayName)}
           <div className="auth-page__actions">
             <Button
               loading={logout.isPending}
@@ -89,7 +95,7 @@ export function LogoutPage() {
   } else if (me.data) {
     body = (
       <>
-        <p>{confirmText(me.data.displayName)}</p>
+        {confirmation(me.data.displayName, me.data.id)}
         <div className="auth-page__actions">
           {/* Signing out is an action, even though it leaves the page. */}
           <Button
@@ -117,13 +123,8 @@ export function LogoutPage() {
   }
 
   return (
-    <section
-      className="auth-page"
-      data-testid={TESTID.logout.page}
-      aria-labelledby="logout-heading"
-    >
-      <h2 id="logout-heading">{t('auth.signOut')}</h2>
+    <AuthCard title={t('auth.signOut')} headingId="logout-heading" testId={TESTID.logout.page}>
       {body}
-    </section>
+    </AuthCard>
   );
 }

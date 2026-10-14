@@ -83,6 +83,7 @@ export const ko: Record<MessageKey, string> = {
   'designSystem.colorInput': '색상 입력 (팔레트)',
   'designSystem.overlays': '오버레이 (모달 / 시트 / 사이드바)',
 
+  'auth.brand': 'hwahee 계정',
   'auth.userId': '아이디',
   'auth.userIdPlaceholder': '아이디',
   'auth.userIdInvalid': '영문 소문자, 숫자, _, -로 1–50자를 입력하세요.',
@@ -113,8 +114,7 @@ export const ko: Record<MessageKey, string> = {
   'auth.bioPlaceholder': '자신을 짧게 소개해 주세요',
   'auth.bioCount': '{count}/{max}',
   'auth.bioInvalid': '{max}자 이내로 입력하세요.',
-  'auth.logout.confirm': '{name}(으)로 로그인되어 있습니다. 모든 서비스에서 로그아웃할까요?',
-  'auth.logout.confirmUnknown': '모든 서비스에서 로그아웃할까요?',
+  'auth.logout.confirm': '모든 서비스에서 로그아웃할까요?',
   'auth.logout.signingOut': '모든 서비스에서 로그아웃하는 중…',
   'auth.logout.done': '모든 서비스에서 로그아웃되었습니다.',
   'auth.logout.notSignedIn': '로그인되어 있지 않습니다.',

@@ -197,34 +197,177 @@ a {
   font-size: var(--font-size-sm);
 }
 
-/* Sign-up / sign-in / sign-out pages: one narrow column. */
+/* ── Member pages ─────────────────────────────────────────────────────────── */
+/*
+ * Sign-up / sign-in / sign-out (src/client/auth/auth-card.tsx): one card in
+ * the middle of an otherwise empty screen, like any large service's account
+ * page. On a phone the card dissolves into the page.
+ */
+.auth-shell {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--space-6) var(--space-4);
+}
+
 .auth-page {
-  max-width: 28rem;
+  width: 100%;
+  max-width: 26rem;
+}
+
+.auth-page > .card > .card__body {
+  padding: var(--space-7) var(--space-6) var(--space-6);
+}
+
+/* The card is the whole page: the kids skin's picked-up-card tilt would move
+   the form out from under the pointer while it is being filled in. */
+[data-design] .auth-page > .card:hover {
+  transform: none;
+}
+
+.auth-page__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-5);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.auth-page__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  text-align: center;
+}
+
+/* Centred lines break between words, never inside a Korean one. */
+.auth-page__subtitle,
+.auth-page__body > p {
+  word-break: keep-all;
+  text-wrap: balance;
+}
+
+.auth-page__subtitle {
+  margin: var(--space-2) 0 0;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.auth-page__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.auth-page__body > p {
+  margin: 0;
+  text-align: center;
 }
 
 .auth-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  margin-block: var(--space-4);
+}
+
+/* Full-width buttons: one obvious next step, and an easy target on a phone. */
+.auth-form > .btn,
+.auth-page__actions > .btn {
+  width: 100%;
 }
 
 .auth-form > .btn {
-  align-self: flex-start;
+  margin-top: var(--space-2);
 }
 
 .auth-page__actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--space-2);
-  margin-block: var(--space-4);
 }
 
 /* "Taking you back…" while the browser is about to leave the page. */
 .auth-page__status {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
+  padding-block: var(--space-4);
+}
+
+.auth-page__question {
+  font-weight: 600;
+}
+
+.auth-page__bio {
+  color: var(--color-text-muted);
+  white-space: pre-line;
+}
+
+/* The way to the sibling page ("Not a member yet? Sign up"), under a divider. */
+.auth-page__footer {
+  margin: var(--space-6) 0 0;
+  padding-top: var(--space-5);
+  border-top: var(--border-width) solid var(--color-border);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Who is signed in: a chip, centred. */
+.auth-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  align-self: center;
+  max-width: 100%;
+  padding: var(--space-2) var(--space-5) var(--space-2) var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.auth-identity__icon {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--color-primary);
+}
+
+.auth-identity__name {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.auth-identity__id {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 32rem) {
+  .auth-shell {
+    place-items: start stretch;
+    padding: 0;
+  }
+
+  .auth-page {
+    max-width: none;
+  }
+
+  .auth-page > .card {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .auth-page > .card > .card__body {
+    padding: var(--space-7) var(--space-4) var(--space-6);
+  }
 }
 
 .app-main {

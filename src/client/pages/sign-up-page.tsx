@@ -15,6 +15,7 @@ import { Link, Navigate } from 'react-router';
 
 import { ApiRequestError } from '../api/http';
 import { useCaller, useSignUp } from '../api/queries';
+import { AuthCard } from '../auth/auth-card';
 import {
   FlowStatus,
   isExpiredRequest,
@@ -93,13 +94,28 @@ export function SignUpPage() {
   // Signed up for a service: the browser is on its way back to it.
   const leaving = loginChallenge !== null && signUp.isSuccess;
 
+  const formOpen = caller !== 'anyone' && !expired && !leaving;
+
   return (
-    <section
-      className="auth-page"
-      data-testid={TESTID.signUp.page}
-      aria-labelledby="sign-up-heading"
+    <AuthCard
+      title={t('auth.signUp')}
+      headingId="sign-up-heading"
+      subtitle={formOpen ? t('auth.signUp.description') : undefined}
+      footer={
+        formOpen ? (
+          <>
+            {t('auth.signUp.haveAccount')}{' '}
+            <Link
+              to={withLoginChallenge('/login', loginChallenge)}
+              data-testid={TESTID.signUp.loginLink}
+            >
+              {t('auth.signIn')}
+            </Link>
+          </>
+        ) : undefined
+      }
+      testId={TESTID.signUp.page}
     >
-      <h2 id="sign-up-heading">{t('auth.signUp')}</h2>
       {caller === 'anyone' ? (
         <Alert tone="info" testId={TESTID.signUp.disabled}>
           {t('auth.disabled')}
@@ -112,7 +128,6 @@ export function SignUpPage() {
         <FlowStatus text={t('auth.returning')} testId={TESTID.signUp.returning} />
       ) : (
         <>
-          <p className="muted">{t('auth.signUp.description')}</p>
           {failure && !idTaken && (
             <Alert tone="error" testId={TESTID.signUp.error}>
               {failure.message}
@@ -158,17 +173,8 @@ export function SignUpPage() {
               {t('auth.signUp')}
             </Button>
           </form>
-          <p>
-            {t('auth.signUp.haveAccount')}{' '}
-            <Link
-              to={withLoginChallenge('/login', loginChallenge)}
-              data-testid={TESTID.signUp.loginLink}
-            >
-              {t('auth.signIn')}
-            </Link>
-          </p>
         </>
       )}
-    </section>
+    </AuthCard>
   );
 }

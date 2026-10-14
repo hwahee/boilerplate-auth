@@ -7,6 +7,7 @@
 import { useEffect, useRef } from 'react';
 
 import { useLogout } from '../api/queries';
+import { AuthCard } from '../auth/auth-card';
 import { useI18n } from '../i18n/locale-context';
 import { TESTID } from '../testing/testids';
 import { Alert } from '../ui/alert';
@@ -25,23 +26,22 @@ export function LoggedOutPage() {
   }, [signOutHere]);
 
   return (
-    <section
-      className="auth-page"
-      data-testid={TESTID.loggedOut.page}
-      aria-labelledby="logged-out-heading"
+    <AuthCard
+      title={t('auth.signOut')}
+      headingId="logged-out-heading"
+      testId={TESTID.loggedOut.page}
     >
-      <h2 id="logged-out-heading">{t('auth.signOut')}</h2>
       <Alert tone="success" testId={TESTID.loggedOut.done}>
         {t('auth.logout.done')}
       </Alert>
       <div className="auth-page__actions">
-        <Button to="/" variant="secondary" testId={TESTID.loggedOut.homeLink}>
-          {t('auth.goHome')}
-        </Button>
-        <Button to="/login" variant="ghost" testId={TESTID.loggedOut.loginLink}>
+        <Button to="/login" testId={TESTID.loggedOut.loginLink}>
           {t('auth.signIn')}
         </Button>
+        <Button to="/" variant="ghost" testId={TESTID.loggedOut.homeLink}>
+          {t('auth.goHome')}
+        </Button>
       </div>
-    </section>
+    </AuthCard>
   );
 }

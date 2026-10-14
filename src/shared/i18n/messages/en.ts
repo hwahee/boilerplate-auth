@@ -87,6 +87,7 @@ export const en = {
   'designSystem.colorInput': 'Color input (palette)',
   'designSystem.overlays': 'Overlays (modal / sheet / sidebar)',
 
+  'auth.brand': 'hwahee Account',
   'auth.userId': 'User ID',
   'auth.userIdPlaceholder': 'user id',
   'auth.userIdInvalid': 'Use 1–50 lowercase letters, digits, _ or -.',
@@ -116,8 +117,7 @@ export const en = {
   'auth.bioPlaceholder': 'A few words about yourself',
   'auth.bioCount': '{count}/{max}',
   'auth.bioInvalid': 'Keep it to {max} characters.',
-  'auth.logout.confirm': 'You are signed in as {name}. Sign out of every service?',
-  'auth.logout.confirmUnknown': 'Sign out of every service?',
+  'auth.logout.confirm': 'Sign out of every service?',
   'auth.logout.signingOut': 'Signing you out of every service…',
   'auth.logout.done': 'You are signed out of every service.',
   'auth.logout.notSignedIn': 'You are not signed in.',

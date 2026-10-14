@@ -11,6 +11,7 @@ import { LogIn, LogOut } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { useCaller, useMe } from '../api/queries';
+import { AuthCard, MemberIdentity } from '../auth/auth-card';
 import { useI18n } from '../i18n/locale-context';
 import { TESTID } from '../testing/testids';
 import { Alert } from '../ui/alert';
@@ -21,6 +22,7 @@ export function AccountPage() {
   const caller = useCaller();
   const me = useMe();
 
+  let subtitle: string | undefined;
   let body: ReactNode = null;
   if (caller === 'anyone') {
     body = (
@@ -29,28 +31,27 @@ export function AccountPage() {
       </Alert>
     );
   } else if (caller === 'guest') {
+    subtitle = t('auth.account.guest');
     body = (
-      <>
-        <p className="muted">{t('auth.account.guest')}</p>
-        <div className="auth-page__actions">
-          <Button to="/login" variant="secondary" testId={TESTID.account.signIn}>
-            <LogIn aria-hidden size="1em" />
-            {t('auth.signIn')}
-          </Button>
-          <Button to="/sign-up" testId={TESTID.account.signUp}>
-            {t('auth.signUp')}
-          </Button>
-        </div>
-      </>
+      <div className="auth-page__actions">
+        <Button to="/login" testId={TESTID.account.signIn}>
+          <LogIn aria-hidden size="1em" />
+          {t('auth.signIn')}
+        </Button>
+        <Button to="/sign-up" variant="secondary" testId={TESTID.account.signUp}>
+          {t('auth.signUp')}
+        </Button>
+      </div>
     );
   } else if (caller === 'member' && me.data) {
     body = (
       <>
-        <p data-testid={TESTID.account.user}>
-          {t('auth.signedInAs', { name: me.data.displayName })}{' '}
-          <span className="muted">@{me.data.id}</span>
-        </p>
-        {me.data.bio === null ? null : <p className="muted">{me.data.bio}</p>}
+        <MemberIdentity
+          name={me.data.displayName}
+          userId={me.data.id}
+          testId={TESTID.account.user}
+        />
+        {me.data.bio === null ? null : <p className="auth-page__bio">{me.data.bio}</p>}
         <div className="auth-page__actions">
           <Button to="/logout" variant="secondary" testId={TESTID.account.signOut}>
             <LogOut aria-hidden size="1em" />
@@ -62,13 +63,13 @@ export function AccountPage() {
   }
 
   return (
-    <section
-      className="auth-page"
-      data-testid={TESTID.account.page}
-      aria-labelledby="account-heading"
+    <AuthCard
+      title={t('auth.account.title')}
+      headingId="account-heading"
+      subtitle={subtitle}
+      testId={TESTID.account.page}
     >
-      <h2 id="account-heading">{t('auth.account.title')}</h2>
       {body}
-    </section>
+    </AuthCard>
   );
 }
