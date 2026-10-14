@@ -85,6 +85,8 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-app_local_password}@db:5432/${POSTGRES_DB:-app}
       CORS_ORIGINS: ''
       SERVER_ROLE: all
+      # The member server signs in by id alone (CLAUDE.md); unset means `none`.
+      AUTH_DRIVER: dev
     ports:
       - '3100:3100'
 
