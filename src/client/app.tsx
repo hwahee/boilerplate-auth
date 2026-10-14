@@ -12,8 +12,7 @@ import { BrowserRouter, Link, Outlet, Route, Routes } from 'react-router';
 import { isRetryableError } from './api/http';
 import { AccountControls } from './auth/account-controls';
 import { LocaleProvider, useI18n } from './i18n/locale-context';
-import { DesignSystemPage } from './pages/design-system-page';
-import { HomePage } from './pages/home-page';
+import { AccountPage } from './pages/account-page';
 import { LoggedOutPage } from './pages/logged-out-page';
 import { LoginPage } from './pages/login-page';
 import { LogoutPage } from './pages/logout-page';
@@ -94,8 +93,7 @@ function AppRoutes() {
     <Routes>
       {/* Standard chrome: header + footer. */}
       <Route element={<AppLayout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/design-system" element={<DesignSystemPage />} />
+        <Route path="/" element={<AccountPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/sign-up" element={<SignUpPage />} />
         <Route path="/logout" element={<LogoutPage />} />

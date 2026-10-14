@@ -4,6 +4,8 @@
     "src/server/index.ts",
     "src/client/main.tsx",
     "src/client/ui/overlay/declarative.ts",
+    "src/client/pages/home-page.tsx",
+    "src/client/pages/design-system-page.tsx",
     "src/**/*.test.{ts,tsx}",
     "scripts/*.ts"
   ],
