@@ -63,12 +63,18 @@ describe('createHydraClient', () => {
 
 describe('login', () => {
   test('reads the request; an unnamed client goes by its id', async () => {
-    reply.body = { skip: false, subject: '', client: { client_id: 'todo-app', client_name: '' } };
+    reply.body = {
+      skip: false,
+      subject: '',
+      client: { client_id: 'todo-app', client_name: '' },
+      request_url: 'http://localhost:4444/oauth2/auth?client_id=todo-app&theme=dark',
+    };
     expect(await hydra.getLoginRequest('abc')).toEqual({
       skip: false,
       subject: '',
       clientId: 'todo-app',
       clientName: 'todo-app',
+      requestUrl: 'http://localhost:4444/oauth2/auth?client_id=todo-app&theme=dark',
     });
     expect(seen[0]).toMatchObject({
       method: 'GET',

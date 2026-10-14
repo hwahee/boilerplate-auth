@@ -6,6 +6,7 @@
  * (logout). This service answers with members from this app's database; the
  * pages (/login, /sign-up, /logout) only collect what a member types.
  */
+import { appearanceFromParams } from '@shared/domain/appearance';
 import type { LoginResumption, LogoutRequestInfo } from '@shared/domain/user';
 
 import type { HydraClient } from '../identity/hydra';
@@ -26,6 +27,11 @@ interface IdentityServiceDeps {
  */
 const CONFIRMED_PARAM = 'confirmed';
 
+/** The query of a URL Hydra hands back as requested (it may be relative). */
+function queryOf(requestUrl: string): URLSearchParams {
+  return new URL(requestUrl, 'http://hydra.invalid').searchParams;
+}
+
 export class IdentityService {
   constructor(private readonly deps: IdentityServiceDeps) {}
 
@@ -37,7 +43,8 @@ export class IdentityService {
   /**
    * A service sent someone to sign in. When Hydra already remembers them, or
    * they are signed in to this app, they go straight back — no page.
-   * Otherwise the page asks, and tells them which service they are going to.
+   * Otherwise the page asks, tells them which service they are going to, and
+   * looks the way that service asked (@shared/domain/appearance).
    */
   async resumeLogin(challenge: string, signedInUserId?: string): Promise<LoginResumption> {
     const request = await this.hydra().getLoginRequest(challenge);
@@ -47,7 +54,11 @@ export class IdentityService {
     if (signedInUserId !== undefined && (await this.deps.users.findById(signedInUserId))) {
       return { redirectTo: await this.finishLogin(challenge, request.clientId, signedInUserId) };
     }
-    return { redirectTo: null, service: { id: request.clientId, name: request.clientName } };
+    return {
+      redirectTo: null,
+      service: { id: request.clientId, name: request.clientName },
+      appearance: appearanceFromParams(queryOf(request.requestUrl)),
+    };
   }
 
   /** The member signed in (or up) on the page: hand them back to the service. */
@@ -76,14 +87,15 @@ export class IdentityService {
     });
   }
 
-  /** Who is signing out, and whether they already confirmed it here. */
+  /** Who is signing out, whether they already confirmed it here, and how the page should look. */
   async logoutRequest(challenge: string): Promise<LogoutRequestInfo> {
     const request = await this.hydra().getLogoutRequest(challenge);
     const user = request.subject ? await this.deps.users.findById(request.subject) : null;
-    const requested = new URL(request.requestUrl, 'http://hydra.invalid');
+    const requested = queryOf(request.requestUrl);
     return {
       displayName: user?.displayName ?? request.subject,
-      confirmed: requested.searchParams.get(CONFIRMED_PARAM) === '1',
+      confirmed: requested.get(CONFIRMED_PARAM) === '1',
+      appearance: appearanceFromParams(requested),
     };
   }
 
