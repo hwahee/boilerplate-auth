@@ -23,6 +23,7 @@ import {
 } from '../auth/flow-status';
 import { useI18n } from '../i18n/locale-context';
 import { TESTID } from '../testing/testids';
+import { useApplyAppearance } from '../theme/use-apply-appearance';
 import { Alert } from '../ui/alert';
 import { Button } from '../ui/button';
 import { TextField } from '../ui/text-field';
@@ -33,6 +34,8 @@ export function LoginPage() {
   const login = useLogin();
   const resume = useResumeLogin();
   const loginChallenge = useChallenge('login_challenge');
+  // How the service that sent them here wants the page to look.
+  useApplyAppearance(resume.data?.redirectTo === null ? resume.data.appearance : undefined);
 
   // The only local state: the uncommitted input (+ its validation error).
   const [userId, setUserId] = useState('');

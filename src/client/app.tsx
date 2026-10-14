@@ -1,26 +1,20 @@
 /**
- * App shell: providers (query cache, theme, locale, overlays), router, and the layout
- * with the shared footer, which routes can opt out of one group at a time.
- * The header is just the service name (a link home) and the account controls.
- * Page links live in the footer's link columns, and the global preference
- * switches (theme / design variant / language) in its identity row — see
- * ./ui/footer.tsx and ./ui/app-controls.tsx.
+ * App shell: providers (query cache, theme, locale, overlays), router, and the layout.
+ * No header and no switches: the service that sends a visitor here picks the
+ * theme, design and language (@shared/domain/appearance).
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Link, Outlet, Route, Routes } from 'react-router';
+import { BrowserRouter, Route, Routes } from 'react-router';
 
 import { isRetryableError } from './api/http';
-import { AccountControls } from './auth/account-controls';
-import { LocaleProvider, useI18n } from './i18n/locale-context';
+import { LocaleProvider } from './i18n/locale-context';
 import { AccountPage } from './pages/account-page';
 import { LoggedOutPage } from './pages/logged-out-page';
 import { LoginPage } from './pages/login-page';
 import { LogoutPage } from './pages/logout-page';
 import { NotFoundPage } from './pages/not-found-page';
 import { SignUpPage } from './pages/sign-up-page';
-import { TESTID } from './testing/testids';
 import { ThemeProvider } from './theme/theme-context';
-import { Footer } from './ui/footer';
 import { OverlayProvider } from './ui/overlay';
 
 const queryClient = new QueryClient({
@@ -33,81 +27,20 @@ const queryClient = new QueryClient({
   },
 });
 
-function Header() {
-  const { t } = useI18n();
-
-  return (
-    <header className="app-header" data-testid={TESTID.app.header}>
-      <div className="app-header__brand">
-        {/* With no nav row, the service name is the way home from any page. */}
-        <h1 className="app-header__title">
-          <Link to="/" data-testid={TESTID.app.homeLink}>
-            {t('app.title')}
-          </Link>
-        </h1>
-        <p className="app-header__tagline muted">{t('app.tagline')}</p>
-      </div>
-
-      {/* Signing in stays up here; the preference switches that used to share
-          this row moved to the footer. */}
-      <div className="app-controls">
-        <AccountControls />
-      </div>
-    </header>
-  );
-}
-
-/**
- * The chrome wrapped around a routed page.
- *
- * `footer` is the per-route switch for the shared footer. It defaults to
- * `true`, so a new route keeps the footer unless it explicitly opts out —
- * the exception has to be declared, never the rule.
- */
-function AppLayout({ footer = true }: { footer?: boolean }) {
-  const { t } = useI18n();
+function Shell() {
   return (
     <div className="app-shell">
-      <a className="skip-link" href="#main">
-        {t('common.skipToContent')}
-      </a>
-      <Header />
       <main id="main" className="app-main">
-        <Outlet />
+        <Routes>
+          <Route path="/" element={<AccountPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/sign-up" element={<SignUpPage />} />
+          <Route path="/logout" element={<LogoutPage />} />
+          <Route path="/logged-out" element={<LoggedOutPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
       </main>
-      {footer && <Footer />}
     </div>
-  );
-}
-
-/**
- * Route table. Chrome is expressed with layout routes rather than a flag
- * consulted inside the pages, so which routes carry the footer is readable
- * here in one place.
- *
- * Routes are ranked by specificity, not by source order, so the `*` fallback
- * below never shadows a concrete path declared in another group.
- */
-function AppRoutes() {
-  return (
-    <Routes>
-      {/* Standard chrome: header + footer. */}
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<AccountPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/sign-up" element={<SignUpPage />} />
-        <Route path="/logout" element={<LogoutPage />} />
-        <Route path="/logged-out" element={<LoggedOutPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Route>
-
-      {/* Pages that own the whole viewport — full-screen editors, embedded
-          widgets, kiosk views — go in their own group with the footer off:
-
-      <Route element={<AppLayout footer={false} />}>
-        <Route path="/embed/:id" element={<EmbedPage />} />
-      </Route> */}
-    </Routes>
   );
 }
 
@@ -121,7 +54,7 @@ export function App() {
                 useOverlay() render here, so they see exactly these contexts
                 and nothing from the subtree that opened them. */}
             <OverlayProvider>
-              <AppRoutes />
+              <Shell />
             </OverlayProvider>
           </BrowserRouter>
         </LocaleProvider>

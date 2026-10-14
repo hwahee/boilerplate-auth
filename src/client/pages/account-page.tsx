@@ -1,7 +1,7 @@
 /**
  * / — the member server's front page: account things only. A guest gets the
  * ways in (sign in, sign up), a member sees who they are and the way out.
- * Like the header controls it only navigates; each step has its own page.
+ * It only navigates; each step has its own page.
  *
  * The boilerplate's demos (todos + chat, the design-system showcase) are kept
  * in the tree but not routed — see knip.json — so rebasing on the boilerplate

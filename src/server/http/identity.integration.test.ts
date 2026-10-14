@@ -75,7 +75,11 @@ describe('a service sends someone to sign in', () => {
     const guest = await call<LoginResumption>('POST', '/api/auth/login/resume', {
       body: { loginChallenge: asked },
     });
-    expect(guest.body).toEqual({ redirectTo: null, service: { id: 'chat-app', name: 'Chat' } });
+    expect(guest.body).toEqual({
+      redirectTo: null,
+      service: { id: 'chat-app', name: 'Chat' },
+      appearance: {},
+    });
 
     const login = await call<SignInResult>('POST', '/api/auth/login', {
       body: { userId: 'bob', loginChallenge: asked },
@@ -131,7 +135,7 @@ describe('signing out', () => {
       'GET',
       `/api/auth/logout-request?logout_challenge=${logoutChallenge}`,
     );
-    expect(request.body).toEqual({ displayName: 'Dave', confirmed: false });
+    expect(request.body).toEqual({ displayName: 'Dave', confirmed: false, appearance: {} });
 
     const { status, body, headers } = await call<{ redirectTo: string }>(
       'POST',

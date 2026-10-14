@@ -9,16 +9,28 @@
  *       Office        = 2000s MS Office (dense, beveled controls, no motion)
  *       Kids          = playground/toy vibe (chunky, rounded, exaggerated motion)
  *
- * Both persist to localStorage; a design saved under its old name (a, b) is
- * read as the new one and saved back under it. The initial theme derives from the OS
- * preference — computed once, not stored as extra state.
+ * Neither has a switch on the member server's pages: the service that sends
+ * a visitor here picks them (@shared/domain/appearance) — on the page URL,
+ * read once here, or on its Hydra request, applied by useApplyAppearance.
+ * Both persist to localStorage for a visit that names none (a design saved
+ * under its old name, a or b, is read as the new one); without either, the
+ * theme derives from the OS preference.
  */
-import { designFrom, type Design, type Theme } from '@shared/domain/appearance';
+import {
+  appearanceFromParams,
+  designFrom,
+  type Design,
+  type Theme,
+} from '@shared/domain/appearance';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 export type { Design, Theme };
 
-/** The design a toggle click moves to next — cycles Standard → Contrast → Office → Kids → Standard. */
+/**
+ * The design a toggle click moves to next. No page here shows the toggle, but
+ * the boilerplate's footer controls (ui/app-controls.tsx) stay compiled so
+ * rebasing on it keeps conflicting only in app.tsx.
+ */
 const NEXT_DESIGN: Record<Design, Design> = {
   standard: 'contrast',
   contrast: 'office',
@@ -33,6 +45,8 @@ export function nextDesign(current: Design): Design {
 interface ThemeContextValue {
   theme: Theme;
   design: Design;
+  setTheme: (theme: Theme) => void;
+  setDesign: (design: Design) => void;
   toggleTheme: () => void;
   toggleDesign: () => void;
 }
@@ -42,13 +56,18 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 const THEME_KEY = 'app.theme';
 const DESIGN_KEY = 'app.design';
 
+/** What the page URL asks for, read once on load. */
+const requested = appearanceFromParams(new URLSearchParams(window.location.search));
+
 function initialTheme(): Theme {
+  if (requested.theme) return requested.theme;
   const stored = localStorage.getItem(THEME_KEY);
   if (stored === 'light' || stored === 'dark') return stored;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 function initialDesign(): Design {
+  if (requested.design) return requested.design;
   return designFrom(localStorage.getItem(DESIGN_KEY)) ?? 'standard';
 }
 
@@ -71,6 +90,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       value={{
         theme,
         design,
+        setTheme,
+        setDesign,
         toggleTheme: () => setTheme((t) => (t === 'light' ? 'dark' : 'light')),
         toggleDesign: () => setDesign(nextDesign),
       }}

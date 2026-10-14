@@ -6,6 +6,7 @@
  * with the id alone (development stage).
  */
 import type { UtcIsoString } from '../time';
+import type { Appearance } from './appearance';
 import { s, toValidator, type Infer } from '../validation';
 
 export interface User {
@@ -83,11 +84,14 @@ export interface SignInResult {
 
 /** What `POST /api/auth/login/resume` answers. */
 export type LoginResumption =
-  { redirectTo: string } | { redirectTo: null; service: { id: string; name: string } };
+  | { redirectTo: string }
+  | { redirectTo: null; service: { id: string; name: string }; appearance: Appearance };
 
 /** What `GET /api/auth/logout-request` answers. */
 export interface LogoutRequestInfo {
   displayName: string | null;
   /** The member already confirmed signing out on this app's page. */
   confirmed: boolean;
+  /** How the service that asked wants the page to look. */
+  appearance: Appearance;
 }

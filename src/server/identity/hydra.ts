@@ -23,6 +23,8 @@ export interface LoginRequest {
   /** The service asking — its OAuth client id doubles as the service name. */
   clientId: string;
   clientName: string;
+  /** The authorization URL as the service requested it, query included. */
+  requestUrl: string;
 }
 
 export interface ConsentRequest {
@@ -113,6 +115,7 @@ export function createHydraClient(
         skip: boolean;
         subject: string;
         client: { client_id: string; client_name?: string };
+        request_url?: string;
       }>('login', admin('login', 'login_challenge', challenge));
       return {
         skip: request.skip,
@@ -120,6 +123,7 @@ export function createHydraClient(
         clientId: request.client.client_id,
         // Hydra answers an unnamed client with an empty name.
         clientName: nonEmpty(request.client.client_name) ?? request.client.client_id,
+        requestUrl: request.request_url ?? '',
       };
     },
 

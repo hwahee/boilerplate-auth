@@ -1,18 +1,17 @@
 /**
- * How the page looks — theme, design and language — as it travels to the
- * member server's pages, so signing in looks like the service it started on.
+ * How the member server's pages look — chosen by the service that sends a
+ * visitor here, never by a switch on these pages (CLAUDE.md: theme and skin
+ * travel as query parameters).
  *
- * The member server reads these query parameters from the authorization
- * request Hydra keeps as requested (boilerplate-auth
- * `src/shared/domain/appearance.ts`); OAuth ignores parameters it doesn't
- * know, and `ui_locales` is the OIDC standard one. The sign-in link to
- * `/api/auth/login` carries the same names, so one parser serves both hops:
+ * A service adds them to the URL it redirects to: this app's page itself, or
+ * the authorization / logout request it sends to Hydra, which keeps the URL
+ * as requested (OAuth ignores parameters it doesn't know):
  *
  *   theme=light|dark
  *   design=standard|contrast|office|kids  (also the old a|b, see below)
- *   ui_locales=ko en   — the first one we speak wins
+ *   ui_locales=ko en   — the OIDC standard parameter; the first one we speak wins
  *
- * Anything missing or unknown is left out.
+ * Anything missing or unknown is left out, and the page keeps what it had.
  */
 import { isLocale, type Locale } from '../i18n';
 

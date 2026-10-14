@@ -18,6 +18,7 @@ import { useCaller, useLogout, useLogoutRequest, useMe } from '../api/queries';
 import { FlowStatus, isExpiredRequest, useChallenge } from '../auth/flow-status';
 import { useI18n } from '../i18n/locale-context';
 import { TESTID } from '../testing/testids';
+import { useApplyAppearance } from '../theme/use-apply-appearance';
 import { Alert } from '../ui/alert';
 import { Button } from '../ui/button';
 
@@ -31,6 +32,7 @@ export function LogoutPage() {
   const logout = useLogout();
   const logoutChallenge = useChallenge('logout_challenge');
   const request = useLogoutRequest(logoutChallenge);
+  useApplyAppearance(request.data?.appearance);
 
   // Already confirmed on this page before going through Hydra: finish without
   // asking again. Once per challenge (a ref: StrictMode runs effects twice).
