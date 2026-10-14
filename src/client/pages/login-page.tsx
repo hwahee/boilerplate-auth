@@ -15,6 +15,7 @@ import { Link, Navigate } from 'react-router';
 
 import { ApiRequestError } from '../api/http';
 import { useCaller, useLogin, useResumeLogin } from '../api/queries';
+import { AuthCard } from '../auth/auth-card';
 import {
   FlowStatus,
   isExpiredRequest,
@@ -85,6 +86,9 @@ export function LoginPage() {
   const service = resume.data?.redirectTo === null ? resume.data.service : null;
 
   let body: ReactNode;
+  // Only next to the form: who it is for, and the way to sign up instead.
+  let subtitle: string | undefined;
+  let footer: ReactNode;
   if (caller === 'anyone') {
     body = (
       <Alert tone="info" testId={TESTID.login.disabled}>
@@ -107,55 +111,58 @@ export function LoginPage() {
       </Alert>
     ) : null;
   } else {
-    body = (
+    subtitle = service
+      ? t('auth.login.forService', { service: service.name })
+      : t('auth.login.description');
+    footer = (
       <>
-        <p className="muted">
-          {service
-            ? t('auth.login.forService', { service: service.name })
-            : t('auth.login.description')}
-        </p>
-        <form
-          className="auth-form"
-          onSubmit={submit}
-          aria-labelledby="login-heading"
-          data-testid={TESTID.login.form}
+        {t('auth.login.noAccount')}{' '}
+        <Link
+          to={withLoginChallenge('/sign-up', loginChallenge)}
+          data-testid={TESTID.login.signUpLink}
         >
-          <TextField
-            label={t('auth.userId')}
-            placeholder={t('auth.userIdPlaceholder')}
-            value={userId}
-            onChange={(event) => {
-              setUserId(event.target.value);
-              setUserIdError(undefined);
-              if (login.isError) login.reset();
-            }}
-            error={userIdError ?? serverError}
-            maxLength={50}
-            autoComplete="username"
-            testId={TESTID.login.userId}
-          />
-          <Button type="submit" loading={login.isPending} testId={TESTID.login.submit}>
-            <LogIn aria-hidden size="1em" />
-            {t('auth.signIn')}
-          </Button>
-        </form>
-        <p>
-          {t('auth.login.noAccount')}{' '}
-          <Link
-            to={withLoginChallenge('/sign-up', loginChallenge)}
-            data-testid={TESTID.login.signUpLink}
-          >
-            {t('auth.signUp')}
-          </Link>
-        </p>
+          {t('auth.signUp')}
+        </Link>
       </>
+    );
+    body = (
+      <form
+        className="auth-form"
+        onSubmit={submit}
+        aria-labelledby="login-heading"
+        data-testid={TESTID.login.form}
+      >
+        <TextField
+          label={t('auth.userId')}
+          placeholder={t('auth.userIdPlaceholder')}
+          value={userId}
+          onChange={(event) => {
+            setUserId(event.target.value);
+            setUserIdError(undefined);
+            if (login.isError) login.reset();
+          }}
+          error={userIdError ?? serverError}
+          maxLength={50}
+          autoComplete="username"
+          testId={TESTID.login.userId}
+        />
+        <Button type="submit" loading={login.isPending} testId={TESTID.login.submit}>
+          <LogIn aria-hidden size="1em" />
+          {t('auth.signIn')}
+        </Button>
+      </form>
     );
   }
 
   return (
-    <section className="auth-page" data-testid={TESTID.login.page} aria-labelledby="login-heading">
-      <h2 id="login-heading">{t('auth.signIn')}</h2>
+    <AuthCard
+      title={t('auth.signIn')}
+      headingId="login-heading"
+      subtitle={subtitle}
+      footer={footer}
+      testId={TESTID.login.page}
+    >
       {body}
-    </section>
+    </AuthCard>
   );
 }
