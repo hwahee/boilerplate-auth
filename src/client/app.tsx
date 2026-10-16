@@ -1,7 +1,8 @@
 /**
  * App shell: providers (query cache, theme, locale, overlays), router, and the layout.
- * No header and no switches: the service that sends a visitor here picks the
- * theme, design and language (@shared/domain/appearance).
+ * No header and no switches: every page is one card in the middle of the
+ * screen (auth/auth-card.tsx), and the service that sends a visitor here picks
+ * the theme, design and language (@shared/domain/appearance).
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router';
@@ -29,18 +30,16 @@ const queryClient = new QueryClient({
 
 function Shell() {
   return (
-    <div className="app-shell">
-      <main id="main" className="app-main">
-        <Routes>
-          <Route path="/" element={<AccountPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/sign-up" element={<SignUpPage />} />
-          <Route path="/logout" element={<LogoutPage />} />
-          <Route path="/logged-out" element={<LoggedOutPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </main>
-    </div>
+    <main id="main" className="auth-shell">
+      <Routes>
+        <Route path="/" element={<AccountPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/sign-up" element={<SignUpPage />} />
+        <Route path="/logout" element={<LogoutPage />} />
+        <Route path="/logged-out" element={<LoggedOutPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </main>
   );
 }
 
