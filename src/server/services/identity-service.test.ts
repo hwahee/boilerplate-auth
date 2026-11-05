@@ -128,6 +128,13 @@ describe('IdentityService — consent and logout', () => {
       design: 'office',
       locale: 'en',
     });
+
+    // A service that hasn't taken the skin rename still sends the old name.
+    const renamed = hydra.startLogout({
+      subject: 'alice',
+      requestUrl: '/oauth2/sessions/logout?design=b',
+    });
+    expect((await service.logoutRequest(renamed)).appearance).toEqual({ design: 'contrast' });
   });
 
   test('without Hydra the flows are 404 and a confirmed sign-out ends on /logged-out', async () => {
